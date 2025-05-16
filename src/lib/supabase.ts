@@ -143,66 +143,85 @@ export const supabase = {
     }
   },
   from: (table: string) => ({
-    select: () => ({
-      eq: (field: string, value: any) => ({
-        then: (callback: Function) => {
-          let result: MockResponse<any[]>;
-          
-          switch (table) {
-            case 'users':
-              result = { data: mockUsers.filter(u => u[field as keyof User] === value), error: null };
-              break;
-            case 'players':
-              result = { data: mockPlayers.filter(p => p[field as keyof Player] === value), error: null };
-              break;
-            case 'games':
-              result = { data: mockGames.filter(g => g[field as keyof Game] === value), error: null };
-              break;
-            case 'confirmations':
-              result = { data: mockConfirmations.filter(c => c[field as keyof Confirmation] === value), error: null };
-              break;
-            case 'payments':
-              result = { data: mockPayments.filter(p => p[field as keyof Payment] === value), error: null };
-              break;
-            case 'finance_settings':
-              result = { data: [mockFinanceSettings], error: null };
-              break;
-            default:
-              result = { data: [], error: null };
+    select: () => {
+      const query = {
+        eq: (field: string, value: any) => {
+          return {
+            then: (callback: (result: MockResponse<any[]>) => void) => {
+              let result: MockResponse<any[]>;
+              
+              switch (table) {
+                case 'users':
+                  result = { data: mockUsers.filter(u => u[field as keyof User] === value), error: null };
+                  break;
+                case 'players':
+                  result = { data: mockPlayers.filter(p => p[field as keyof Player] === value), error: null };
+                  break;
+                case 'games':
+                  result = { data: mockGames.filter(g => g[field as keyof Game] === value), error: null };
+                  break;
+                case 'confirmations':
+                  result = { data: mockConfirmations.filter(c => c[field as keyof Confirmation] === value), error: null };
+                  break;
+                case 'payments':
+                  result = { data: mockPayments.filter(p => p[field as keyof Payment] === value), error: null };
+                  break;
+                case 'finance_settings':
+                  result = { data: [mockFinanceSettings], error: null };
+                  break;
+                default:
+                  result = { data: [], error: null };
+              }
+              callback(result);
+              return result;
+            }
+          };
+        },
+        single: () => ({
+          then: (callback: (result: MockResponse<any>) => void) => {
+            let result: MockResponse<any>;
+            
+            switch (table) {
+              case 'finance_settings':
+                result = { data: mockFinanceSettings, error: null };
+                break;
+              case 'games':
+                result = { data: mockGames.length > 0 ? mockGames[mockGames.length - 1] : null, error: null };
+                break;
+              default:
+                result = { data: null, error: null };
+            }
+            callback(result);
+            return result;
           }
-          callback(result);
-          return result;
-        }
-      }),
-      single: () => ({
-        then: (callback: Function) => {
-          let result: MockResponse<any>;
-          
-          switch (table) {
-            case 'finance_settings':
-              result = { data: mockFinanceSettings, error: null };
-              break;
-            case 'games':
-              result = { data: mockGames.length > 0 ? mockGames[mockGames.length - 1] : null, error: null };
-              break;
-            default:
-              result = { data: null, error: null };
-          }
-          callback(result);
-          return result;
-        }
-      }),
-      order: () => ({
-        limit: (limit: number) => ({
-          then: (callback: Function) => {
+        }),
+        order: () => ({
+          limit: (limit: number) => ({
+            then: (callback: (result: MockResponse<any[]>) => void) => {
+              let result: MockResponse<any[]>;
+              
+              switch (table) {
+                case 'games':
+                  const sortedGames = [...mockGames].sort((a, b) => 
+                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                  ).slice(0, limit);
+                  result = { data: sortedGames, error: null };
+                  break;
+                default:
+                  result = { data: [], error: null };
+              }
+              callback(result);
+              return result;
+            }
+          }),
+          then: (callback: (result: MockResponse<any[]>) => void) => {
             let result: MockResponse<any[]>;
             
             switch (table) {
               case 'games':
-                const sortedGames = [...mockGames].sort((a, b) => 
+                result = { data: [...mockGames].sort((a, b) => 
                   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                ).slice(0, limit);
-                result = { data: sortedGames, error: null };
+                ), error: null };
                 break;
               default:
                 result = { data: [], error: null };
@@ -210,26 +229,12 @@ export const supabase = {
             callback(result);
             return result;
           }
-        }),
-        then: (callback: Function) => {
-          let result: MockResponse<any[]>;
-          
-          switch (table) {
-            case 'games':
-              result = { data: [...mockGames].sort((a, b) => 
-                new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-              ), error: null };
-              break;
-            default:
-              result = { data: [], error: null };
-          }
-          callback(result);
-          return result;
-        }
-      })
-    }),
+        })
+      };
+      return query;
+    },
     insert: (data: any) => ({
-      then: (callback: Function) => {
+      then: (callback: (result: MockResponse<any>) => void) => {
         let newItem;
         let result: MockResponse<any>;
         
@@ -256,7 +261,7 @@ export const supabase = {
     }),
     update: (data: any) => ({
       eq: (field: string, value: any) => ({
-        then: (callback: Function) => {
+        then: (callback: (result: MockResponse<any>) => void) => {
           let updatedItem;
           let result: MockResponse<any>;
           
@@ -284,158 +289,190 @@ export const supabase = {
         }
       })
     }),
-    delete: () => ({
-      eq: (field: string, value: any) => ({
-        then: (callback: Function) => {
-          let result: MockResponse<null>;
-          
-          switch (table) {
-            case 'confirmations':
-              const index = mockConfirmations.findIndex(c => c[field as keyof Confirmation] === value);
-              if (index !== -1) {
-                mockConfirmations.splice(index, 1);
+    delete: () => {
+      return {
+        eq: (field: string, value: any) => {
+          return {
+            eq: (field2: string, value2: any) => ({
+              then: (callback: (result: MockResponse<null>) => void) => {
+                let result: MockResponse<null> = { data: null, error: null };
+                
+                switch (table) {
+                  case 'confirmations':
+                    const index = mockConfirmations.findIndex(c => 
+                      c[field as keyof Confirmation] === value && 
+                      c[field2 as keyof Confirmation] === value2
+                    );
+                    if (index !== -1) {
+                      mockConfirmations.splice(index, 1);
+                    }
+                    break;
+                }
+                callback(result);
+                return result;
               }
-              break;
-          }
-          result = { data: null, error: null };
-          callback(result);
-          return result;
+            })
+          };
         }
-      })
-    })
+      };
+    }
   })
 };
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
-  const { data, error } = await supabase
-    .from('games')
-    .select()
-    .order('created_at')
-    .limit(1)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data && data.length > 0 ? data[0] : null;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('games')
+      .select()
+      .order()
+      .limit(1)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data && response.data.length > 0 ? response.data[0] : null);
+      });
+  });
 };
 
 export const getConfirmations = async (gameId: string): Promise<Confirmation[]> => {
-  const { data, error } = await supabase
-    .from('confirmations')
-    .select()
-    .eq('game_id', gameId)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data || [];
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('confirmations')
+      .select()
+      .eq('game_id', gameId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data || []);
+      });
+  });
 };
 
 export const addConfirmation = async (gameId: string, userId: string, username: string): Promise<any> => {
-  const { data, error } = await supabase
-    .from('confirmations')
-    .insert({
-      game_id: gameId,
-      user_id: userId,
-      username
-    })
-    .then(response => response);
-  
-  if (error) throw error;
-  return data;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('confirmations')
+      .insert({
+        game_id: gameId,
+        user_id: userId,
+        username
+      })
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
 };
 
 export const removeConfirmation = async (gameId: string, userId: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('confirmations')
-    .delete()
-    .eq('game_id', gameId)
-    .eq('user_id', userId)
-    .then(response => response);
-  
-  if (error) throw error;
-  return true;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('confirmations')
+      .delete()
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(true);
+      });
+  });
 };
 
 export const getPlayerAttributes = async (userId: string): Promise<Player | null> => {
-  const { data, error } = await supabase
-    .from('players')
-    .select()
-    .eq('user_id', userId)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data && data.length > 0 ? data[0] : null;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('players')
+      .select()
+      .eq('user_id', userId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data && response.data.length > 0 ? response.data[0] : null);
+      });
+  });
 };
 
 export const updatePlayerAttributes = async (playerId: string, attributes: PlayerAttributes): Promise<any> => {
-  const { data, error } = await supabase
-    .from('players')
-    .update({ attributes })
-    .eq('id', playerId)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('players')
+      .update({ attributes })
+      .eq('id', playerId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
 };
 
 export const getAllPlayers = async (): Promise<Player[]> => {
-  const { data, error } = await supabase
-    .from('players')
-    .select()
-    .then(response => response);
-  
-  if (error) throw error;
-  return data || [];
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('players')
+      .select()
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data || []);
+      });
+  });
 };
 
 export const getFinanceSettings = async (): Promise<FinanceSettings> => {
-  const { data, error } = await supabase
-    .from('finance_settings')
-    .select()
-    .single()
-    .then(response => response);
-  
-  if (error) throw error;
-  return data || mockFinanceSettings;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('finance_settings')
+      .select()
+      .single()
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data || mockFinanceSettings);
+      });
+  });
 };
 
 export const addPayment = async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<any> => {
-  const { data, error } = await supabase
-    .from('payments')
-    .insert(payment)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('payments')
+      .insert(payment)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
 };
 
 export const getAllPayments = async (): Promise<Payment[]> => {
-  const { data, error } = await supabase
-    .from('payments')
-    .select()
-    .then(response => response);
-  
-  if (error) throw error;
-  return data || [];
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('payments')
+      .select()
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data || []);
+      });
+  });
 };
 
 export const createGame = async (game: Omit<Game, 'id' | 'created_at'>): Promise<any> => {
-  const { data, error } = await supabase
-    .from('games')
-    .insert(game)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('games')
+      .insert(game)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
 };
 
 export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise<any> => {
-  const { data, error } = await supabase
-    .from('users')
-    .update({ isAdmin })
-    .eq('id', userId)
-    .then(response => response);
-  
-  if (error) throw error;
-  return data;
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('users')
+      .update({ isAdmin })
+      .eq('id', userId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
 };

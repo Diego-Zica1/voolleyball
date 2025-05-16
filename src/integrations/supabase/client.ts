@@ -13,6 +13,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    storage: globalThis.localStorage
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined
   }
 });
