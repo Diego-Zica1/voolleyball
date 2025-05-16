@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VolleyballIcon } from "../components/VolleyballIcon";
 import { useToast } from "@/hooks/use-toast";
+import { createAdminUser, createRegularUser } from "@/utils/createTestUsers";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -13,6 +15,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingTestUsers, setIsCreatingTestUsers] = useState(false);
   
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -32,6 +35,10 @@ export default function LoginPage() {
             variant: "destructive",
           });
         } else {
+          toast({
+            title: "Login bem-sucedido!",
+            description: "Bem-vindo de volta!",
+          });
           navigate("/");
         }
       } else {
@@ -41,6 +48,7 @@ export default function LoginPage() {
             description: "Por favor, informe um nome de usuário",
             variant: "destructive",
           });
+          setIsLoading(false);
           return;
         }
         
@@ -67,6 +75,26 @@ export default function LoginPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCreateTestUsers = async () => {
+    setIsCreatingTestUsers(true);
+    try {
+      await createAdminUser();
+      await createRegularUser();
+      toast({
+        title: "Usuários de teste criados",
+        description: "Admin: admin@example.com (senha: admin123456) e Jogador: jogador@example.com (senha: jogador123456)",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao criar usuários de teste",
+        description: error.message || "Ocorreu um erro ao criar os usuários",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingTestUsers(false);
     }
   };
 
@@ -158,11 +186,39 @@ export default function LoginPage() {
               className="w-full bg-volleyball-purple hover:bg-volleyball-purple/90" 
               disabled={isLoading}
             >
-              {isLoading 
-                ? "Carregando..." 
-                : isLogin ? "Entrar" : "Cadastrar"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Carregando...
+                </>
+              ) : (
+                isLogin ? "Entrar" : "Cadastrar"
+              )}
             </Button>
           </form>
+
+          {/* Botão para criar usuários de teste (visível apenas em desenvolvimento) */}
+          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 text-center">
+              Ambiente de desenvolvimento
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleCreateTestUsers}
+              disabled={isCreatingTestUsers}
+            >
+              {isCreatingTestUsers ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando usuários de teste...
+                </>
+              ) : (
+                "Criar usuários de teste (admin e jogador)"
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
