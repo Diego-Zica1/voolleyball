@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types';
 import { useToast } from '@/hooks/use-toast';
+import { populateTestData } from '@/utils/createTestUsers';
 
 type AuthProviderProps = {
   children: React.ReactNode;
@@ -29,13 +30,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         setIsLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user) {
+          console.log("Session found, fetching user profile...");
           // Fetch user data from profiles to check if admin
-          const { data: profileData } = await supabase
+          const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
+
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+            setUser(null);
+            return;
+          }
 
           if (profileData) {
             setUser({
@@ -45,10 +54,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
               isAdmin: profileData.is_admin,
               created_at: profileData.created_at
             });
+            console.log("User profile fetched successfully:", profileData);
           } else {
+            console.error("No profile found for user:", session.user.id);
             setUser(null);
           }
         } else {
+          console.log("No active session found");
           setUser(null);
         }
       } catch (error) {
@@ -59,9 +71,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     };
 
+    // Populate test data if needed
+    const initializeTestData = async () => {
+      try {
+        await populateTestData();
+      } catch (error) {
+        console.error("Error initializing test data:", error);
+      }
+    };
+
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event);
         if (session?.user) {
           // Only perform synchronous operations in the callback
           setIsLoading(true);
@@ -69,13 +91,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
             try {
-              const { data: profileData } = await supabase
+              const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', session.user.id)
                 .single();
 
+              if (profileError) {
+                console.error("Error fetching profile on auth change:", profileError);
+                setUser(null);
+                return;
+              }
+
               if (profileData) {
+                console.log("Profile fetched on auth change:", profileData);
                 setUser({
                   id: session.user.id,
                   email: session.user.email || '',
@@ -83,9 +112,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   isAdmin: profileData.is_admin,
                   created_at: profileData.created_at
                 });
+              } else {
+                console.error("No profile found on auth change");
+                setUser(null);
               }
             } catch (error) {
               console.error('Error fetching user profile:', error);
+              setUser(null);
             } finally {
               setIsLoading(false);
             }
@@ -98,6 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     );
 
     checkSession();
+    initializeTestData();
 
     return () => {
       subscription.unsubscribe();
@@ -106,21 +140,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log("Attempting to sign in:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error);
+        throw error;
+      }
+
+      console.log("Sign in successful:", data);
+      toast({
+        title: "Login bem-sucedido",
+        description: "Você foi conectado com sucesso.",
+      });
+      
       return {};
     } catch (error: any) {
       console.error('Error signing in:', error);
+      toast({
+        title: "Erro no login",
+        description: error.message || "Falha no login",
+        variant: "destructive",
+      });
       return { error: { message: error.message || 'Falha no login' } };
     }
   };
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
+      console.log("Attempting to sign up:", email, username);
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -129,10 +180,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign up error:", error);
+        throw error;
+      }
+
+      console.log("Sign up successful:", data);
+      toast({
+        title: "Cadastro bem-sucedido",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      
       return {};
     } catch (error: any) {
       console.error('Error signing up:', error);
+      toast({
+        title: "Erro no cadastro",
+        description: error.message || "Falha no cadastro",
+        variant: "destructive",
+      });
       return { error: { message: error.message || 'Falha no cadastro' } };
     }
   };
@@ -141,8 +207,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      toast({
+        title: "Logout bem-sucedido",
+        description: "Você foi desconectado com sucesso.",
+      });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        title: "Erro ao sair",
+        description: "Não foi possível desconectar. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 

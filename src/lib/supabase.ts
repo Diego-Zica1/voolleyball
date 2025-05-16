@@ -1,512 +1,347 @@
-// This is a placeholder for the Supabase client configuration
-// In a real implementation, you'll need to connect to your Supabase project
-// by adding your Supabase URL and anon key from your Supabase project settings
-
-// For now, this will provide the structure for the client
-// You'll need to connect to Supabase using the native Lovable integration
-
+import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
-
-// Mock data for development
-const mockUsers: User[] = [
-  {
-    id: '1',
-    username: 'admin',
-    email: 'admin@example.com',
-    isAdmin: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    username: 'laranja',
-    email: 'laranja@example.com',
-    isAdmin: false,
-    created_at: new Date().toISOString(),
-  },
-];
-
-const mockPlayers: Player[] = [
-  {
-    id: '1',
-    user_id: '1',
-    username: 'admin',
-    attributes: {
-      saque: 7,
-      passe: 7,
-      cortada: 8,
-      bloqueio: 7,
-      defesa: 6,
-      levantamento: 6,
-      condicionamento_fisico: 9,
-    },
-    average_rating: 7.1,
-  },
-  {
-    id: '2',
-    user_id: '2',
-    username: 'laranja',
-    attributes: {
-      saque: 6,
-      passe: 6,
-      cortada: 7,
-      bloqueio: 5,
-      defesa: 6,
-      levantamento: 5,
-      condicionamento_fisico: 8,
-    },
-    average_rating: 6.1,
-  },
-];
-
-const mockGames: Game[] = [
-  {
-    id: '1',
-    date: '2024-05-25',
-    time: '10:00',
-    location: 'Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55',
-    max_players: 18,
-    created_by: '1',
-    created_at: new Date().toISOString(),
-  },
-];
-
-const mockConfirmations: Confirmation[] = [
-  {
-    id: '1',
-    game_id: '1',
-    user_id: '2',
-    username: 'laranja',
-    confirmed_at: new Date().toISOString(),
-  },
-];
-
-const mockPayments: Payment[] = [];
-
-const mockFinanceSettings: FinanceSettings = {
-  monthly_fee: 50,
-  weekly_fee: 20,
-  monthly_goal: 800,
-  pix_qrcode: 'https://placeholder.com/qrcode',
-};
-
-// Define return types for mock functions
-type MockResponse<T> = {
-  data: T | null;
-  error: { message: string } | null;
-};
-
-// Mock Supabase client functions
-export const supabase = {
-  auth: {
-    signIn: async ({ email, password }: { email: string; password: string }): Promise<MockResponse<{ user: User }>> => {
-      const user = mockUsers.find(u => u.email === email && password === 'password');
-      if (user) {
-        return { data: { user }, error: null };
-      }
-      return { data: null, error: { message: 'Invalid login credentials' } };
-    },
-    signUp: async ({ email, password, username }: { email: string; password: string; username: string }): Promise<MockResponse<{ user: User }>> => {
-      const newUser: User = {
-        id: (mockUsers.length + 1).toString(),
-        username,
-        email,
-        isAdmin: false,
-        created_at: new Date().toISOString(),
-      };
-      mockUsers.push(newUser);
-      
-      const newPlayer: Player = {
-        id: (mockPlayers.length + 1).toString(),
-        user_id: newUser.id,
-        username: newUser.username,
-        attributes: {
-          saque: 5,
-          passe: 5,
-          cortada: 5,
-          bloqueio: 5,
-          defesa: 5,
-          levantamento: 5,
-          condicionamento_fisico: 5,
-        },
-        average_rating: 5,
-      };
-      mockPlayers.push(newPlayer);
-      
-      return { data: { user: newUser }, error: null };
-    },
-    signOut: async (): Promise<{ error: null }> => {
-      return { error: null };
-    },
-    getUser: (): User => {
-      return mockUsers[0];
-    }
-  },
-  from: (table: string) => {
-    // Create a queryBuilder object that includes all the methods
-    const queryBuilder = {
-      select: () => {
-        // Return an object with all possible query methods
-        return {
-          eq: (field: string, value: any) => {
-            return {
-              then: (callback: (result: MockResponse<any[]>) => void) => {
-                let result: MockResponse<any[]>;
-                
-                switch (table) {
-                  case 'users':
-                    result = { data: mockUsers.filter(u => u[field as keyof User] === value), error: null };
-                    break;
-                  case 'players':
-                    result = { data: mockPlayers.filter(p => p[field as keyof Player] === value), error: null };
-                    break;
-                  case 'games':
-                    result = { data: mockGames.filter(g => g[field as keyof Game] === value), error: null };
-                    break;
-                  case 'confirmations':
-                    result = { data: mockConfirmations.filter(c => c[field as keyof Confirmation] === value), error: null };
-                    break;
-                  case 'payments':
-                    result = { data: mockPayments.filter(p => p[field as keyof Payment] === value), error: null };
-                    break;
-                  case 'finance_settings':
-                    result = { data: [mockFinanceSettings], error: null };
-                    break;
-                  default:
-                    result = { data: [], error: null };
-                }
-                callback(result);
-                return result;
-              }
-            };
-          },
-          single: () => ({
-            then: (callback: (result: MockResponse<any>) => void) => {
-              let result: MockResponse<any>;
-              
-              switch (table) {
-                case 'finance_settings':
-                  result = { data: mockFinanceSettings, error: null };
-                  break;
-                case 'games':
-                  result = { data: mockGames.length > 0 ? mockGames[mockGames.length - 1] : null, error: null };
-                  break;
-                default:
-                  result = { data: null, error: null };
-              }
-              callback(result);
-              return result;
-            }
-          }),
-          order: () => ({
-            limit: (limit: number) => ({
-              then: (callback: (result: MockResponse<any[]>) => void) => {
-                let result: MockResponse<any[]>;
-                
-                switch (table) {
-                  case 'games':
-                    const sortedGames = [...mockGames].sort((a, b) => 
-                      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                    ).slice(0, limit);
-                    result = { data: sortedGames, error: null };
-                    break;
-                  default:
-                    result = { data: [], error: null };
-                }
-                callback(result);
-                return result;
-              }
-            }),
-            then: (callback: (result: MockResponse<any[]>) => void) => {
-              let result: MockResponse<any[]>;
-              
-              switch (table) {
-                case 'games':
-                  result = { data: [...mockGames].sort((a, b) => 
-                    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                  ), error: null };
-                  break;
-                default:
-                  result = { data: [], error: null };
-              }
-              callback(result);
-              return result;
-            }
-          }),
-          // Add direct 'then' method to the select result
-          then: (callback: (result: MockResponse<any[]>) => void) => {
-            let result: MockResponse<any[]>;
-            
-            switch (table) {
-              case 'players':
-                result = { data: mockPlayers, error: null };
-                break;
-              case 'payments':
-                result = { data: mockPayments, error: null };
-                break;
-              default:
-                result = { data: [], error: null };
-            }
-            callback(result);
-            return result;
-          }
-        };
-      },
-      insert: (data: any) => ({
-        then: (callback: (result: MockResponse<any>) => void) => {
-          let newItem;
-          let result: MockResponse<any>;
-          
-          switch (table) {
-            case 'games':
-              newItem = { ...data, id: (mockGames.length + 1).toString(), created_at: new Date().toISOString() };
-              mockGames.push(newItem as Game);
-              break;
-            case 'confirmations':
-              newItem = { ...data, id: (mockConfirmations.length + 1).toString(), confirmed_at: new Date().toISOString() };
-              mockConfirmations.push(newItem as Confirmation);
-              break;
-            case 'payments':
-              newItem = { ...data, id: (mockPayments.length + 1).toString(), created_at: new Date().toISOString() };
-              mockPayments.push(newItem as Payment);
-              break;
-            default:
-              newItem = null;
-          }
-          result = { data: newItem, error: null };
-          callback(result);
-          return result;
-        }
-      }),
-      update: (data: any) => ({
-        eq: (field: string, value: any) => ({
-          then: (callback: (result: MockResponse<any>) => void) => {
-            let updatedItem;
-            let result: MockResponse<any>;
-            
-            switch (table) {
-              case 'players':
-                const playerIndex = mockPlayers.findIndex(p => p[field as keyof Player] === value);
-                if (playerIndex !== -1) {
-                  mockPlayers[playerIndex] = { ...mockPlayers[playerIndex], ...data };
-                  updatedItem = mockPlayers[playerIndex];
-                }
-                break;
-              case 'users':
-                const userIndex = mockUsers.findIndex(u => u[field as keyof User] === value);
-                if (userIndex !== -1) {
-                  mockUsers[userIndex] = { ...mockUsers[userIndex], ...data };
-                  updatedItem = mockUsers[userIndex];
-                }
-                break;
-              default:
-                updatedItem = null;
-            }
-            result = { data: updatedItem, error: null };
-            callback(result);
-            return result;
-          }
-        })
-      }),
-      delete: () => {
-        return {
-          eq: (field: string, value: any) => {
-            return {
-              eq: (field2: string, value2: any) => ({
-                then: (callback: (result: MockResponse<null>) => void) => {
-                  let result: MockResponse<null> = { data: null, error: null };
-                  
-                  switch (table) {
-                    case 'confirmations':
-                      const index = mockConfirmations.findIndex(c => 
-                        c[field as keyof Confirmation] === value && 
-                        c[field2 as keyof Confirmation] === value2
-                      );
-                      if (index !== -1) {
-                        mockConfirmations.splice(index, 1);
-                      }
-                      break;
-                  }
-                  callback(result);
-                  return result;
-                }
-              })
-            };
-          }
-        };
-      }
-    };
-    
-    return queryBuilder;
-  }
-};
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching latest game...");
+    const { data, error } = await supabase
       .from('games')
-      .select()
-      .order()
+      .select('*')
+      .order('created_at', { ascending: false })
       .limit(1)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data && response.data.length > 0 ? response.data[0] : null);
-      });
-  });
+      .single();
+      
+    if (error) {
+      console.error("Error fetching latest game:", error);
+      throw error;
+    }
+    
+    console.log("Latest game fetched:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getLatestGame:", error);
+    return null;
+  }
 };
 
 export const getConfirmations = async (gameId: string): Promise<Confirmation[]> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching confirmations for game:", gameId);
+    const { data, error } = await supabase
       .from('confirmations')
-      .select()
-      .eq('game_id', gameId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data || []);
-      });
-  });
+      .select('*')
+      .eq('game_id', gameId);
+      
+    if (error) {
+      console.error("Error fetching confirmations:", error);
+      throw error;
+    }
+    
+    console.log("Confirmations fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getConfirmations:", error);
+    return [];
+  }
 };
 
 export const addConfirmation = async (gameId: string, userId: string, username: string): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Adding confirmation:", gameId, userId, username);
+    const { data, error } = await supabase
       .from('confirmations')
       .insert({
         game_id: gameId,
         user_id: userId,
         username
-      })
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
       });
-  });
+      
+    if (error) {
+      console.error("Error adding confirmation:", error);
+      throw error;
+    }
+    
+    console.log("Confirmation added successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in addConfirmation:", error);
+    throw error;
+  }
 };
 
 export const removeConfirmation = async (gameId: string, userId: string): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Removing confirmation:", gameId, userId);
+    const { error } = await supabase
       .from('confirmations')
       .delete()
       .eq('game_id', gameId)
-      .eq('user_id', userId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(true);
-      });
-  });
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error("Error removing confirmation:", error);
+      throw error;
+    }
+    
+    console.log("Confirmation removed successfully");
+    return true;
+  } catch (error) {
+    console.error("Error in removeConfirmation:", error);
+    throw error;
+  }
 };
 
 export const getPlayerAttributes = async (userId: string): Promise<Player | null> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching player attributes for:", userId);
+    const { data, error } = await supabase
       .from('players')
-      .select()
+      .select('*')
       .eq('user_id', userId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data && response.data.length > 0 ? response.data[0] : null);
-      });
-  });
+      .single();
+      
+    if (error) {
+      console.error("Error fetching player attributes:", error);
+      throw error;
+    }
+    
+    console.log("Player attributes fetched:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getPlayerAttributes:", error);
+    return null;
+  }
 };
 
 export const updatePlayerAttributes = async (playerId: string, attributes: PlayerAttributes): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Updating player attributes:", playerId, attributes);
+    const { data, error } = await supabase
       .from('players')
       .update({ attributes })
-      .eq('id', playerId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
-      });
-  });
+      .eq('id', playerId);
+      
+    if (error) {
+      console.error("Error updating player attributes:", error);
+      throw error;
+    }
+    
+    console.log("Player attributes updated successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in updatePlayerAttributes:", error);
+    throw error;
+  }
 };
 
 export const getAllPlayers = async (): Promise<Player[]> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching all players...");
+    const { data, error } = await supabase
       .from('players')
-      .select()
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data || []);
-      });
-  });
+      .select('*');
+      
+    if (error) {
+      console.error("Error fetching all players:", error);
+      throw error;
+    }
+    
+    console.log("All players fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAllPlayers:", error);
+    return [];
+  }
 };
 
 export const getFinanceSettings = async (): Promise<FinanceSettings> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching finance settings...");
+    const { data, error } = await supabase
       .from('finance_settings')
-      .select()
-      .single()
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data || mockFinanceSettings);
-      });
-  });
+      .select('*')
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error fetching finance settings:", error);
+      throw error;
+    }
+    
+    console.log("Finance settings fetched:", data);
+    return data || {
+      monthly_fee: 50,
+      weekly_fee: 20,
+      monthly_goal: 800,
+      pix_qrcode: 'https://placeholder.com/qrcode',
+      id: ''
+    };
+  } catch (error) {
+    console.error("Error in getFinanceSettings:", error);
+    return {
+      monthly_fee: 50,
+      weekly_fee: 20,
+      monthly_goal: 800,
+      pix_qrcode: 'https://placeholder.com/qrcode',
+      id: ''
+    };
+  }
 };
 
 export const addPayment = async (payment: Omit<Payment, 'id' | 'created_at'>): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Adding payment:", payment);
+    const { data, error } = await supabase
       .from('payments')
-      .insert(payment)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
-      });
-  });
+      .insert(payment);
+      
+    if (error) {
+      console.error("Error adding payment:", error);
+      throw error;
+    }
+    
+    console.log("Payment added successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in addPayment:", error);
+    throw error;
+  }
 };
 
 export const getAllPayments = async (): Promise<Payment[]> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Fetching all payments...");
+    const { data, error } = await supabase
       .from('payments')
-      .select()
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data || []);
-      });
-  });
+      .select('*');
+      
+    if (error) {
+      console.error("Error fetching all payments:", error);
+      throw error;
+    }
+    
+    console.log("All payments fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAllPayments:", error);
+    return [];
+  }
 };
 
 export const createGame = async (game: Omit<Game, 'id' | 'created_at'>): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Creating game:", game);
+    const { data, error } = await supabase
       .from('games')
-      .insert(game)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
-      });
-  });
+      .insert(game);
+      
+    if (error) {
+      console.error("Error creating game:", error);
+      throw error;
+    }
+    
+    console.log("Game created successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in createGame:", error);
+    throw error;
+  }
 };
 
 export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
-      .from('users')
-      .update({ isAdmin })
-      .eq('id', userId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
-      });
-  });
+  try {
+    console.log("Updating user admin status:", userId, isAdmin);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ is_admin: isAdmin })
+      .eq('id', userId);
+      
+    if (error) {
+      console.error("Error updating user admin status:", error);
+      throw error;
+    }
+    
+    console.log("User admin status updated successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in updateUserAdmin:", error);
+    throw error;
+  }
 };
 
 export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved'): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    supabase
+  try {
+    console.log("Updating payment status:", paymentId, status);
+    const { data, error } = await supabase
       .from('payments')
       .update({ status })
-      .eq('id', paymentId)
-      .then(response => {
-        if (response.error) reject(response.error);
-        resolve(response.data);
+      .eq('id', paymentId);
+      
+    if (error) {
+      console.error("Error updating payment status:", error);
+      throw error;
+    }
+    
+    console.log("Payment status updated successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in updatePaymentStatus:", error);
+    throw error;
+  }
+};
+
+// Function to initialize test data
+export const initializeDatabase = async (): Promise<void> => {
+  try {
+    // Check if we already have any games
+    const { data: existingGames, error: gamesError } = await supabase
+      .from('games')
+      .select('id')
+      .limit(1);
+      
+    if (gamesError) {
+      console.error("Error checking existing games:", gamesError);
+    }
+    
+    // If no games exist, create a default one
+    if (!existingGames || existingGames.length === 0) {
+      console.log("No games found, creating default game...");
+      await createGame({
+        date: new Date().toISOString().split('T')[0],
+        time: '19:00',
+        location: 'Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55',
+        max_players: 18,
+        created_by: 'system'
       });
-  });
+    }
+    
+    // Check if we already have finance settings
+    const { data: existingSettings, error: settingsError } = await supabase
+      .from('finance_settings')
+      .select('id')
+      .limit(1);
+      
+    if (settingsError) {
+      console.error("Error checking existing finance settings:", settingsError);
+    }
+    
+    // If no settings exist, create default ones
+    if (!existingSettings || existingSettings.length === 0) {
+      console.log("No finance settings found, creating default settings...");
+      const { error } = await supabase
+        .from('finance_settings')
+        .insert({
+          monthly_fee: 50.0,
+          weekly_fee: 20.0,
+          monthly_goal: 800.0,
+          pix_qrcode: 'https://placeholder.com/qrcode'
+        });
+        
+      if (error) {
+        console.error("Error creating default finance settings:", error);
+      }
+    }
+  } catch (error) {
+    console.error("Error initializing database:", error);
+  }
 };

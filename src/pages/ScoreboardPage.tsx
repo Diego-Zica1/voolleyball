@@ -1,9 +1,10 @@
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { ScoreboardMenu } from "@/components/ScoreboardMenu";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus } from "lucide-react";
+import { Header } from "@/components/Header";
 
 export default function ScoreboardPage() {
   const scoreboardRef = useRef<HTMLDivElement>(null);
@@ -11,6 +12,19 @@ export default function ScoreboardPage() {
   const [teamAScore, setTeamAScore] = useState(0);
   const [teamBScore, setTeamBScore] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   const toggleControls = () => {
     setShowControls(!showControls);
@@ -34,8 +48,11 @@ export default function ScoreboardPage() {
 
   return (
     <>
+      {/* Site Header (visible only when not in fullscreen) */}
+      {!isFullscreen && <Header />}
+      
       {/* Menu de controles (visível apenas quando não estiver em fullscreen ou quando showControls for true) */}
-      {showControls && (
+      {showControls && !isFullscreen && (
         <PageContainer title="Placar">
           <div className="text-center">
             <p className="mt-4 text-muted-foreground">
@@ -48,14 +65,28 @@ export default function ScoreboardPage() {
       {/* Placar principal (referenciado para o modo tela cheia) */}
       <div 
         ref={scoreboardRef}
-        className={`${showControls ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 bg-gradient-to-br from-black to-volleyball-purple-900 flex items-center justify-center'}`}
+        className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
       >
-        <div className={`w-full max-w-5xl mx-auto ${!showControls && 'p-8'}`}>
-          <div className="flex flex-col md:flex-row justify-between gap-8">
+        <div className={`w-full h-full max-w-full mx-auto ${!showControls || isFullscreen ? 'p-0' : ''}`}>
+          <div className={`flex flex-col md:flex-row justify-between ${
+            isFullscreen ? 'h-full' : 'gap-8'
+          }`}>
             {/* Time A */}
-            <div className={`flex-1 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative ${!showControls && 'h-[80vh] flex flex-col justify-center'}`}>
-              <h2 className="text-2xl md:text-4xl font-bold mb-6">TIME A</h2>
-              <div className="text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple">
+            <div className={`flex-1 ${
+              isFullscreen 
+                ? 'h-full flex flex-col justify-center bg-gradient-to-br from-volleyball-purple-900 to-black' 
+                : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+            }`}>
+              <h2 className={`${
+                isFullscreen 
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
+                  : 'text-2xl md:text-4xl font-bold mb-6'
+              }`}>TIME A</h2>
+              <div className={`${
+                isFullscreen 
+                  ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-white text-center' 
+                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
+              }`}>
                 {teamAScore}
               </div>
               
@@ -65,7 +96,7 @@ export default function ScoreboardPage() {
                   variant="outline"
                   size="icon"
                   onClick={() => decrementScore('A')}
-                  className="rounded-full"
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
                 >
                   <Minus className="h-5 w-5" />
                 </Button>
@@ -73,14 +104,14 @@ export default function ScoreboardPage() {
                   variant="default"
                   size="icon"
                   onClick={() => incrementScore('A')}
-                  className="rounded-full bg-volleyball-purple hover:bg-volleyball-purple/80"
+                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-purple' : 'bg-volleyball-purple hover:bg-volleyball-purple/80'}`}
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
               </div>
               
               {/* Botões de controle flutuantes (visíveis apenas no modo fullscreen) */}
-              {!showControls && (
+              {isFullscreen && (
                 <div className="absolute top-8 left-8 flex flex-col gap-2">
                   <Button 
                     variant="outline"
@@ -103,7 +134,7 @@ export default function ScoreboardPage() {
             </div>
             
             {/* Informações do Set (visível apenas quando não estiver em fullscreen) */}
-            {showControls && (
+            {!isFullscreen && (
               <div className="flex flex-col justify-center items-center">
                 <div className="text-xl md:text-3xl font-semibold mb-4 text-center">SET {currentSet}</div>
                 <div className="flex gap-2 md:gap-4">
@@ -115,9 +146,21 @@ export default function ScoreboardPage() {
             )}
             
             {/* Time B */}
-            <div className={`flex-1 bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative ${!showControls && 'h-[80vh] flex flex-col justify-center'}`}>
-              <h2 className="text-2xl md:text-4xl font-bold mb-6">TIME B</h2>
-              <div className="text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green">
+            <div className={`flex-1 ${
+              isFullscreen 
+                ? 'h-full flex flex-col justify-center bg-gradient-to-bl from-volleyball-green-900 to-black' 
+                : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+            }`}>
+              <h2 className={`${
+                isFullscreen 
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
+                  : 'text-2xl md:text-4xl font-bold mb-6'
+              }`}>TIME B</h2>
+              <div className={`${
+                isFullscreen 
+                  ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-white text-center' 
+                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
+              }`}>
                 {teamBScore}
               </div>
               
@@ -127,7 +170,7 @@ export default function ScoreboardPage() {
                   variant="outline"
                   size="icon"
                   onClick={() => decrementScore('B')}
-                  className="rounded-full"
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
                 >
                   <Minus className="h-5 w-5" />
                 </Button>
@@ -135,14 +178,14 @@ export default function ScoreboardPage() {
                   variant="default"
                   size="icon"
                   onClick={() => incrementScore('B')}
-                  className="rounded-full bg-volleyball-green hover:bg-volleyball-green/80"
+                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-green' : 'bg-volleyball-green hover:bg-volleyball-green/80'}`}
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
               </div>
               
               {/* Botões de controle flutuantes (visíveis apenas no modo fullscreen) */}
-              {!showControls && (
+              {isFullscreen && (
                 <div className="absolute top-8 right-8 flex flex-col gap-2">
                   <Button 
                     variant="outline"
