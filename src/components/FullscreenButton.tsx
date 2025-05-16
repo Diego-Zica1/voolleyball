@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Fullscreen, FullscreenExit } from 'lucide-react';
+import { Fullscreen, Minimize2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FullscreenButtonProps {
@@ -52,7 +52,7 @@ export function FullscreenButton({ targetRef, className = '' }: FullscreenButton
       className={`focus:outline-none ${className}`}
       aria-label={isFullscreen ? "Sair da tela cheia" : "Entrar em tela cheia"}
     >
-      {isFullscreen ? <FullscreenExit className="w-5 h-5" /> : <Fullscreen className="w-5 h-5" />}
+      {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Fullscreen className="w-5 h-5" />}
     </Button>
   );
 }
