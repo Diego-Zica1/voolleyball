@@ -233,7 +233,7 @@ export default function HomePage() {
                 onClick={handleCancel} 
                 disabled={isConfirming}
                 variant="destructive"
-                className="w-full mt-4"
+                className="w-full mt-4 bg-volleyball-orange hover:bg-volleyball-orange/90"
               >
                 <X className="w-4 h-4 mr-2" />
                 {isConfirming ? "Cancelando..." : "Cancelar Presença"}
