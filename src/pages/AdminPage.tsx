@@ -8,8 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { getAllPlayers, getLatestGame, getConfirmations, createGame, updateUserAdmin } from "@/lib/supabase";
-import { Game, User } from "@/types";
+import { 
+  getAllPlayers, 
+  getLatestGame, 
+  createGame, 
+  updateUserAdmin, 
+  getAllPayments,
+  updatePaymentStatus
+} from "@/lib/supabase";
+import { Game, User, Payment } from "@/types";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("controls");
@@ -21,6 +28,8 @@ export default function AdminPage() {
   const [latestGame, setLatestGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -28,6 +37,7 @@ export default function AdminPage() {
 
   const tabs = [
     { id: "controls", label: "Controles de Administrador" },
+    { id: "payments", label: "Pagamentos Pendentes" },
     { id: "schedule", label: "Agendar Novo Jogo" }
   ];
 
@@ -65,6 +75,10 @@ export default function AdminPage() {
         // Get latest game
         const game = await getLatestGame();
         setLatestGame(game);
+        
+        // Fetch pending payments
+        const payments = await getAllPayments();
+        setPendingPayments(payments.filter(p => p.status === 'pending'));
       } catch (error) {
         console.error("Error fetching admin data:", error);
       } finally {
@@ -147,6 +161,31 @@ export default function AdminPage() {
       });
     }
   };
+  
+  const handleApprovePayment = async (paymentId: string) => {
+    try {
+      setIsApprovingPayment(paymentId);
+      
+      // In a real implementation, this would update the payment status in Supabase
+      await updatePaymentStatus(paymentId, 'approved');
+      
+      setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
+      
+      toast({
+        title: "Pagamento aprovado",
+        description: "O pagamento foi aprovado com sucesso",
+      });
+    } catch (error) {
+      console.error("Error approving payment:", error);
+      toast({
+        title: "Erro ao aprovar pagamento",
+        description: "Não foi possível aprovar o pagamento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApprovingPayment(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -169,7 +208,7 @@ export default function AdminPage() {
         />
       </div>
 
-      {activeTab === "controls" ? (
+      {activeTab === "controls" && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Controles de Administrador</h2>
           
@@ -220,7 +259,100 @@ export default function AdminPage() {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {activeTab === "payments" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Pagamentos Pendentes</h2>
+          
+          {pendingPayments.length === 0 ? (
+            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+              Não há pagamentos pendentes para aprovação.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Valor
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Comprovante
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                  {pendingPayments.map(payment => (
+                    <tr key={payment.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                          {payment.username}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                          {payment.payment_type === 'monthly' ? 'Mensal' : 'Semanal'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-200">
+                          R$ {payment.amount.toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(payment.created_at).toLocaleDateString('pt-BR')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {payment.receipt_url ? (
+                          <a 
+                            href={payment.receipt_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
+                          >
+                            Ver comprovante
+                          </a>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Sem comprovante
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Button
+                          onClick={() => handleApprovePayment(payment.id)}
+                          disabled={isApprovingPayment === payment.id}
+                          className="bg-volleyball-green hover:bg-volleyball-green/90 text-white text-xs py-1"
+                          size="sm"
+                        >
+                          {isApprovingPayment === payment.id ? 'Aprovando...' : 'Aprovar'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "schedule" && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
           

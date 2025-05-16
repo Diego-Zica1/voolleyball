@@ -1,4 +1,3 @@
-
 // This is a placeholder for the Supabase client configuration
 // In a real implementation, you'll need to connect to your Supabase project
 // by adding your Supabase URL and anon key from your Supabase project settings
@@ -492,6 +491,19 @@ export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise
       .from('users')
       .update({ isAdmin })
       .eq('id', userId)
+      .then(response => {
+        if (response.error) reject(response.error);
+        resolve(response.data);
+      });
+  });
+};
+
+export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved'): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    supabase
+      .from('payments')
+      .update({ status })
+      .eq('id', paymentId)
       .then(response => {
         if (response.error) reject(response.error);
         resolve(response.data);

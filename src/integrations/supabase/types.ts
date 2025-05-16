@@ -9,7 +9,204 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      confirmations: {
+        Row: {
+          confirmed_at: string
+          game_id: string
+          id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          confirmed_at?: string
+          game_id: string
+          id?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          confirmed_at?: string
+          game_id?: string
+          id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmations_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confirmations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_settings: {
+        Row: {
+          id: string
+          monthly_fee: number
+          monthly_goal: number
+          pix_qrcode: string | null
+          weekly_fee: number
+        }
+        Insert: {
+          id?: string
+          monthly_fee?: number
+          monthly_goal?: number
+          pix_qrcode?: string | null
+          weekly_fee?: number
+        }
+        Update: {
+          id?: string
+          monthly_fee?: number
+          monthly_goal?: number
+          pix_qrcode?: string | null
+          weekly_fee?: number
+        }
+        Relationships: []
+      }
+      games: {
+        Row: {
+          created_at: string
+          created_by: string
+          date: string
+          id: string
+          location: string
+          max_players: number
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          date: string
+          id?: string
+          location: string
+          max_players: number
+          time: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          date?: string
+          id?: string
+          location?: string
+          max_players?: number
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_type: string
+          receipt_url: string | null
+          status: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_type: string
+          receipt_url?: string | null
+          status: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_type?: string
+          receipt_url?: string | null
+          status?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          attributes: Json
+          average_rating: number
+          id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          attributes?: Json
+          average_rating?: number
+          id?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          attributes?: Json
+          average_rating?: number
+          id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_admin: boolean
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          is_admin?: boolean
+          username: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_admin?: boolean
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
