@@ -142,70 +142,89 @@ export const supabase = {
       return mockUsers[0];
     }
   },
-  from: (table: string) => ({
-    select: () => {
-      const query = {
-        eq: (field: string, value: any) => {
-          return {
-            then: (callback: (result: MockResponse<any[]>) => void) => {
-              let result: MockResponse<any[]>;
+  from: (table: string) => {
+    // Create a queryBuilder object that includes all the methods
+    const queryBuilder = {
+      select: () => {
+        // Return an object with all possible query methods
+        return {
+          eq: (field: string, value: any) => {
+            return {
+              then: (callback: (result: MockResponse<any[]>) => void) => {
+                let result: MockResponse<any[]>;
+                
+                switch (table) {
+                  case 'users':
+                    result = { data: mockUsers.filter(u => u[field as keyof User] === value), error: null };
+                    break;
+                  case 'players':
+                    result = { data: mockPlayers.filter(p => p[field as keyof Player] === value), error: null };
+                    break;
+                  case 'games':
+                    result = { data: mockGames.filter(g => g[field as keyof Game] === value), error: null };
+                    break;
+                  case 'confirmations':
+                    result = { data: mockConfirmations.filter(c => c[field as keyof Confirmation] === value), error: null };
+                    break;
+                  case 'payments':
+                    result = { data: mockPayments.filter(p => p[field as keyof Payment] === value), error: null };
+                    break;
+                  case 'finance_settings':
+                    result = { data: [mockFinanceSettings], error: null };
+                    break;
+                  default:
+                    result = { data: [], error: null };
+                }
+                callback(result);
+                return result;
+              }
+            };
+          },
+          single: () => ({
+            then: (callback: (result: MockResponse<any>) => void) => {
+              let result: MockResponse<any>;
               
               switch (table) {
-                case 'users':
-                  result = { data: mockUsers.filter(u => u[field as keyof User] === value), error: null };
-                  break;
-                case 'players':
-                  result = { data: mockPlayers.filter(p => p[field as keyof Player] === value), error: null };
+                case 'finance_settings':
+                  result = { data: mockFinanceSettings, error: null };
                   break;
                 case 'games':
-                  result = { data: mockGames.filter(g => g[field as keyof Game] === value), error: null };
-                  break;
-                case 'confirmations':
-                  result = { data: mockConfirmations.filter(c => c[field as keyof Confirmation] === value), error: null };
-                  break;
-                case 'payments':
-                  result = { data: mockPayments.filter(p => p[field as keyof Payment] === value), error: null };
-                  break;
-                case 'finance_settings':
-                  result = { data: [mockFinanceSettings], error: null };
+                  result = { data: mockGames.length > 0 ? mockGames[mockGames.length - 1] : null, error: null };
                   break;
                 default:
-                  result = { data: [], error: null };
+                  result = { data: null, error: null };
               }
               callback(result);
               return result;
             }
-          };
-        },
-        single: () => ({
-          then: (callback: (result: MockResponse<any>) => void) => {
-            let result: MockResponse<any>;
-            
-            switch (table) {
-              case 'finance_settings':
-                result = { data: mockFinanceSettings, error: null };
-                break;
-              case 'games':
-                result = { data: mockGames.length > 0 ? mockGames[mockGames.length - 1] : null, error: null };
-                break;
-              default:
-                result = { data: null, error: null };
-            }
-            callback(result);
-            return result;
-          }
-        }),
-        order: () => ({
-          limit: (limit: number) => ({
+          }),
+          order: () => ({
+            limit: (limit: number) => ({
+              then: (callback: (result: MockResponse<any[]>) => void) => {
+                let result: MockResponse<any[]>;
+                
+                switch (table) {
+                  case 'games':
+                    const sortedGames = [...mockGames].sort((a, b) => 
+                      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    ).slice(0, limit);
+                    result = { data: sortedGames, error: null };
+                    break;
+                  default:
+                    result = { data: [], error: null };
+                }
+                callback(result);
+                return result;
+              }
+            }),
             then: (callback: (result: MockResponse<any[]>) => void) => {
               let result: MockResponse<any[]>;
               
               switch (table) {
                 case 'games':
-                  const sortedGames = [...mockGames].sort((a, b) => 
+                  result = { data: [...mockGames].sort((a, b) => 
                     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                  ).slice(0, limit);
-                  result = { data: sortedGames, error: null };
+                  ), error: null };
                   break;
                 default:
                   result = { data: [], error: null };
@@ -214,14 +233,16 @@ export const supabase = {
               return result;
             }
           }),
+          // Add direct 'then' method to the select result
           then: (callback: (result: MockResponse<any[]>) => void) => {
             let result: MockResponse<any[]>;
             
             switch (table) {
-              case 'games':
-                result = { data: [...mockGames].sort((a, b) => 
-                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                ), error: null };
+              case 'players':
+                result = { data: mockPlayers, error: null };
+                break;
+              case 'payments':
+                result = { data: mockPayments, error: null };
                 break;
               default:
                 result = { data: [], error: null };
@@ -229,94 +250,95 @@ export const supabase = {
             callback(result);
             return result;
           }
-        })
-      };
-      return query;
-    },
-    insert: (data: any) => ({
-      then: (callback: (result: MockResponse<any>) => void) => {
-        let newItem;
-        let result: MockResponse<any>;
-        
-        switch (table) {
-          case 'games':
-            newItem = { ...data, id: (mockGames.length + 1).toString(), created_at: new Date().toISOString() };
-            mockGames.push(newItem as Game);
-            break;
-          case 'confirmations':
-            newItem = { ...data, id: (mockConfirmations.length + 1).toString(), confirmed_at: new Date().toISOString() };
-            mockConfirmations.push(newItem as Confirmation);
-            break;
-          case 'payments':
-            newItem = { ...data, id: (mockPayments.length + 1).toString(), created_at: new Date().toISOString() };
-            mockPayments.push(newItem as Payment);
-            break;
-          default:
-            newItem = null;
-        }
-        result = { data: newItem, error: null };
-        callback(result);
-        return result;
-      }
-    }),
-    update: (data: any) => ({
-      eq: (field: string, value: any) => ({
+        };
+      },
+      insert: (data: any) => ({
         then: (callback: (result: MockResponse<any>) => void) => {
-          let updatedItem;
+          let newItem;
           let result: MockResponse<any>;
           
           switch (table) {
-            case 'players':
-              const playerIndex = mockPlayers.findIndex(p => p[field as keyof Player] === value);
-              if (playerIndex !== -1) {
-                mockPlayers[playerIndex] = { ...mockPlayers[playerIndex], ...data };
-                updatedItem = mockPlayers[playerIndex];
-              }
+            case 'games':
+              newItem = { ...data, id: (mockGames.length + 1).toString(), created_at: new Date().toISOString() };
+              mockGames.push(newItem as Game);
               break;
-            case 'users':
-              const userIndex = mockUsers.findIndex(u => u[field as keyof User] === value);
-              if (userIndex !== -1) {
-                mockUsers[userIndex] = { ...mockUsers[userIndex], ...data };
-                updatedItem = mockUsers[userIndex];
-              }
+            case 'confirmations':
+              newItem = { ...data, id: (mockConfirmations.length + 1).toString(), confirmed_at: new Date().toISOString() };
+              mockConfirmations.push(newItem as Confirmation);
+              break;
+            case 'payments':
+              newItem = { ...data, id: (mockPayments.length + 1).toString(), created_at: new Date().toISOString() };
+              mockPayments.push(newItem as Payment);
               break;
             default:
-              updatedItem = null;
+              newItem = null;
           }
-          result = { data: updatedItem, error: null };
+          result = { data: newItem, error: null };
           callback(result);
           return result;
         }
-      })
-    }),
-    delete: () => {
-      return {
-        eq: (field: string, value: any) => {
-          return {
-            eq: (field2: string, value2: any) => ({
-              then: (callback: (result: MockResponse<null>) => void) => {
-                let result: MockResponse<null> = { data: null, error: null };
-                
-                switch (table) {
-                  case 'confirmations':
-                    const index = mockConfirmations.findIndex(c => 
-                      c[field as keyof Confirmation] === value && 
-                      c[field2 as keyof Confirmation] === value2
-                    );
-                    if (index !== -1) {
-                      mockConfirmations.splice(index, 1);
-                    }
-                    break;
+      }),
+      update: (data: any) => ({
+        eq: (field: string, value: any) => ({
+          then: (callback: (result: MockResponse<any>) => void) => {
+            let updatedItem;
+            let result: MockResponse<any>;
+            
+            switch (table) {
+              case 'players':
+                const playerIndex = mockPlayers.findIndex(p => p[field as keyof Player] === value);
+                if (playerIndex !== -1) {
+                  mockPlayers[playerIndex] = { ...mockPlayers[playerIndex], ...data };
+                  updatedItem = mockPlayers[playerIndex];
                 }
-                callback(result);
-                return result;
-              }
-            })
-          };
-        }
-      };
-    }
-  })
+                break;
+              case 'users':
+                const userIndex = mockUsers.findIndex(u => u[field as keyof User] === value);
+                if (userIndex !== -1) {
+                  mockUsers[userIndex] = { ...mockUsers[userIndex], ...data };
+                  updatedItem = mockUsers[userIndex];
+                }
+                break;
+              default:
+                updatedItem = null;
+            }
+            result = { data: updatedItem, error: null };
+            callback(result);
+            return result;
+          }
+        })
+      }),
+      delete: () => {
+        return {
+          eq: (field: string, value: any) => {
+            return {
+              eq: (field2: string, value2: any) => ({
+                then: (callback: (result: MockResponse<null>) => void) => {
+                  let result: MockResponse<null> = { data: null, error: null };
+                  
+                  switch (table) {
+                    case 'confirmations':
+                      const index = mockConfirmations.findIndex(c => 
+                        c[field as keyof Confirmation] === value && 
+                        c[field2 as keyof Confirmation] === value2
+                      );
+                      if (index !== -1) {
+                        mockConfirmations.splice(index, 1);
+                      }
+                      break;
+                  }
+                  callback(result);
+                  return result;
+                }
+              })
+            };
+          }
+        };
+      }
+    };
+    
+    return queryBuilder;
+  }
 };
 
 // Client helper functions
