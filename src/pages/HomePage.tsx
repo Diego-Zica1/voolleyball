@@ -269,7 +269,7 @@ export default function HomePage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-orange-500 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-orange-900/20"
                         onClick={() => confirmation.user_id === user.id 
                           ? handleCancel() 
                           : handleCancelOther(confirmation.user_id)
