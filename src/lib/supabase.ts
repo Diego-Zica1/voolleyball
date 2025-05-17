@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -320,7 +321,14 @@ export const getAllUsers = async (): Promise<User[]> => {
     }
     
     console.log("All users fetched:", data);
-    return data || [];
+    // Transform the data to match our User type interface
+    return data?.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      isAdmin: user.is_admin,
+      created_at: user.created_at
+    })) || [];
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     return [];
