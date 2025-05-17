@@ -3,13 +3,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AuthProvider, useAuth } from "./components/AuthProvider";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Header } from "./components/Header";
 
 // Pages
-import AuthPage from "./pages/AuthPage";
+import LoginPage from "./pages/LoginPage";
 import HomePage from "./pages/HomePage";
 import AttributesPage from "./pages/AttributesPage";
 import TeamsPage from "./pages/TeamsPage";
@@ -22,22 +22,14 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  const location = useLocation();
+  // This is a placeholder for auth check
+  // In a real app, you'd check if the user is authenticated
+  const isAuthenticated = true;
   
-  // If we're still checking if the user is authenticated, show nothing
-  if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
-    </div>;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
   }
   
-  // If user is not authenticated, redirect to login
-  if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-  
-  // If user is authenticated, render children
   return <>{children}</>;
 };
 
@@ -51,67 +43,53 @@ const App = () => (
           <BrowserRouter>
             <div className="min-h-screen">
               <Routes>
-                <Route path="/auth" element={<AuthPage />} />
-                
+                <Route path="/login" element={<LoginPage />} />
                 <Route
                   path="/"
                   element={
-                    <ProtectedRoute>
+                    <>
                       <Header />
                       <HomePage />
-                    </ProtectedRoute>
+                    </>
                   }
                 />
-                
                 <Route
                   path="/atributos"
                   element={
-                    <ProtectedRoute>
+                    <>
                       <Header />
                       <AttributesPage />
-                    </ProtectedRoute>
+                    </>
                   }
                 />
-                
                 <Route
                   path="/times"
                   element={
-                    <ProtectedRoute>
+                    <>
                       <Header />
                       <TeamsPage />
-                    </ProtectedRoute>
+                    </>
                   }
                 />
-                
                 <Route
                   path="/contabilidade"
                   element={
-                    <ProtectedRoute>
+                    <>
                       <Header />
                       <FinancePage />
-                    </ProtectedRoute>
+                    </>
                   }
                 />
-                
-                <Route
-                  path="/placar"
-                  element={
-                    <ProtectedRoute>
-                      <ScoreboardPage />
-                    </ProtectedRoute>
-                  }
-                />
-                
+                <Route path="/placar" element={<ScoreboardPage />} />
                 <Route
                   path="/admin"
                   element={
-                    <ProtectedRoute>
+                    <>
                       <Header />
                       <AdminPage />
-                    </ProtectedRoute>
+                    </>
                   }
                 />
-                
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>

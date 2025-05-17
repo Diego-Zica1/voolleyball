@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, ScoreboardSettings } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -301,98 +302,6 @@ export const updatePaymentStatus = async (paymentId: string, status: 'pending' |
     return data;
   } catch (error) {
     console.error("Error in updatePaymentStatus:", error);
-    throw error;
-  }
-};
-
-// Function for getting scoreboard settings
-export const getScoreboardSettings = async (): Promise<ScoreboardSettings | null> => {
-  try {
-    console.log("Fetching scoreboard settings...");
-    const { data, error } = await supabase
-      .from('scoreboard_settings')
-      .select('*')
-      .single();
-      
-    if (error) {
-      console.error("Error fetching scoreboard settings:", error);
-      // If not found, return default values
-      if (error.code === 'PGRST116') {
-        return {
-          id: 'default',
-          team_a_color: '#8B5CF6', // Default purple
-          team_b_color: '#10B981', // Default green
-        };
-      }
-      throw error;
-    }
-    
-    console.log("Scoreboard settings fetched:", data);
-    return data as ScoreboardSettings;
-  } catch (error) {
-    console.error("Error in getScoreboardSettings:", error);
-    // Return default values on error
-    return {
-      id: 'default',
-      team_a_color: '#8B5CF6', // Default purple
-      team_b_color: '#10B981', // Default green
-    };
-  }
-};
-
-// Function for updating scoreboard settings
-export const updateScoreboardSettings = async (settings: Partial<ScoreboardSettings>): Promise<ScoreboardSettings | null> => {
-  try {
-    console.log("Updating scoreboard settings:", settings);
-    
-    // First, check if there are any settings records
-    const { data: existingSettings } = await supabase
-      .from('scoreboard_settings')
-      .select('id')
-      .limit(1);
-    
-    let result;
-    
-    if (!existingSettings || existingSettings.length === 0) {
-      // If no settings exist, insert new ones
-      const { data, error } = await supabase
-        .from('scoreboard_settings')
-        .insert({ 
-          team_a_color: settings.team_a_color || '#8B5CF6',
-          team_b_color: settings.team_b_color || '#10B981'
-        })
-        .select();
-        
-      if (error) {
-        console.error("Error creating scoreboard settings:", error);
-        throw error;
-      }
-      
-      result = data;
-    } else {
-      // If settings exist, update them
-      const { data, error } = await supabase
-        .from('scoreboard_settings')
-        .update({ 
-          team_a_color: settings.team_a_color,
-          team_b_color: settings.team_b_color,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingSettings[0].id)
-        .select();
-        
-      if (error) {
-        console.error("Error updating scoreboard settings:", error);
-        throw error;
-      }
-      
-      result = data;
-    }
-    
-    console.log("Scoreboard settings updated successfully:", result);
-    return result?.[0] as ScoreboardSettings;
-  } catch (error) {
-    console.error("Error in updateScoreboardSettings:", error);
     throw error;
   }
 };

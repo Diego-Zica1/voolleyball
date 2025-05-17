@@ -1,99 +1,91 @@
-import React, { useState, useEffect } from "react";
+
+import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
-import { useAuth } from "@/components/AuthProvider";
+import { TabNav } from "@/components/TabNav";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Payment, FinanceSettings } from "@/types";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { getFinanceSettings, getAllPayments, addPayment } from "@/lib/supabase";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from "@/components/AuthProvider";
+import { getFinanceSettings, addPayment, getAllPayments } from "@/lib/supabase";
+import { FinanceSettings, Payment } from "@/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FinancePage() {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [settings, setSettings] = useState<FinanceSettings | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [paymentType, setPaymentType] = useState<"monthly" | "weekly">("monthly");
+  const [receiptUrl, setReceiptUrl] = useState("");
+  
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [settings, setSettings] = useState<FinanceSettings | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [paymentType, setPaymentType] = useState<'monthly' | 'weekly'>('monthly');
-  const [receiptURL, setReceiptURL] = useState<string>('');
-  
-  // Calculate financial summary
-  const calculateTotalApproved = () => {
-    return payments
-      .filter(payment => payment.status === 'approved')
-      .reduce((sum, payment) => sum + Number(payment.amount), 0);
-  };
-  
-  const calculateMonthProgress = () => {
-    if (!settings) return 0;
-    const total = calculateTotalApproved();
-    return Math.min((total / settings.monthly_goal) * 100, 100);
-  };
+
+  const tabs = [
+    { id: "overview", label: "Visão Geral" },
+    { id: "payment", label: "Realizar Pagamento" }
+  ];
 
   useEffect(() => {
-    const loadFinanceData = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        
-        // Load finance settings
         const financeSettings = await getFinanceSettings();
         setSettings(financeSettings);
         
-        // Load payments
-        const paymentsList = await getAllPayments();
-        setPayments(paymentsList);
+        const allPayments = await getAllPayments();
+        setPayments(allPayments);
       } catch (error) {
-        console.error("Error loading finance data:", error);
+        console.error("Error fetching finance data:", error);
         toast({
-          title: "Erro",
-          description: "Falha ao carregar dados financeiros",
+          title: "Erro ao carregar dados",
+          description: "Não foi possível buscar as informações financeiras",
           variant: "destructive",
         });
       } finally {
         setIsLoading(false);
       }
     };
-    
-    loadFinanceData();
+
+    fetchData();
   }, [toast]);
 
-  const handleSubmitPayment = async () => {
-    if (!user) return;
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para realizar pagamentos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!settings) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível determinar o valor do pagamento",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
-      // Prepare payment data
-      const amount = paymentType === 'monthly' 
-        ? (settings?.monthly_fee || 0)
-        : (settings?.weekly_fee || 0);
-        
+      const amount = paymentType === "monthly" ? settings.monthly_fee : settings.weekly_fee;
+      
       await addPayment({
         user_id: user.id,
-        username: user.username || '',
+        username: user.username,
         amount,
         payment_type: paymentType,
-        receipt_url: receiptURL || null,
-        status: 'pending'
+        receipt_url: receiptUrl || null,
+        status: "pending"
       });
-      
-      // Update the local state
-      const newPayment: Payment = {
-        id: 'temp-' + Date.now().toString(),
-        user_id: user.id,
-        username: user.username || '',
-        amount,
-        payment_type: paymentType,
-        receipt_url: receiptURL || null,
-        status: 'pending',
-        created_at: new Date().toISOString()
-      };
-      
-      setPayments([newPayment, ...payments]);
       
       toast({
         title: "Pagamento registrado",
@@ -101,14 +93,19 @@ export default function FinancePage() {
       });
       
       // Reset form
-      setPaymentType('monthly');
-      setReceiptURL('');
+      setReceiptUrl("");
       
+      // Refresh payments list
+      const updatedPayments = await getAllPayments();
+      setPayments(updatedPayments);
+      
+      // Switch to overview tab
+      setActiveTab("overview");
     } catch (error) {
       console.error("Error submitting payment:", error);
       toast({
-        title: "Erro",
-        description: "Falha ao registrar o pagamento",
+        title: "Erro ao registrar pagamento",
+        description: "Não foi possível registrar seu pagamento",
         variant: "destructive",
       });
     } finally {
@@ -119,202 +116,227 @@ export default function FinancePage() {
   if (isLoading) {
     return (
       <PageContainer title="Contabilidade">
-        <div className="flex justify-center items-center p-8">
-          <Loader2 className="h-8 w-8 animate-spin text-volleyball-purple" />
-        </div>
+        <div className="text-center">Carregando dados financeiros...</div>
       </PageContainer>
     );
   }
 
+  const calculateTotalCollected = () => {
+    return payments
+      .filter(p => p.status === "approved")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  const calculatePending = () => {
+    return payments
+      .filter(p => p.status === "pending")
+      .reduce((sum, payment) => sum + payment.amount, 0);
+  };
+
+  const calculateProgress = () => {
+    if (!settings) return 0;
+    const total = calculateTotalCollected();
+    return Math.floor((total / settings.monthly_goal) * 100);
+  };
+
+  const userPayments = payments.filter(p => p.user_id === user?.id);
+
   return (
-    <PageContainer title="Contabilidade" description="Gerenciamento financeiro do time">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Monthly Summary */}
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Meta Mensal</CardTitle>
-              <CardDescription>
-                Acompanhe o progresso financeiro do time
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Progresso</span>
-                  <span className="text-sm font-medium">
-                    {calculateTotalApproved().toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} de {settings?.monthly_goal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </span>
-                </div>
-                
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                  <div 
-                    className="bg-volleyball-purple h-2.5 rounded-full"
-                    style={{ width: `${calculateMonthProgress()}%` }}
-                  ></div>
-                </div>
-                
-                <div className="text-center pt-4">
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                    {calculateMonthProgress() < 100 
-                      ? `Faltam ${(settings?.monthly_goal - calculateTotalApproved()).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} para atingir a meta mensal`
-                      : "Meta mensal atingida!"}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-center">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button>Realizar Novo Pagamento</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Realizar Pagamento</DialogTitle>
-                    <DialogDescription>
-                      Registre seu pagamento para contribuir com o time
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="payment-type">Tipo de Pagamento</Label>
-                      <div className="flex gap-4">
-                        <div className="flex items-center">
-                          <input 
-                            type="radio" 
-                            id="monthly" 
-                            name="payment-type" 
-                            value="monthly"
-                            checked={paymentType === 'monthly'}
-                            onChange={() => setPaymentType('monthly')}
-                            className="mr-2"
-                          />
-                          <label htmlFor="monthly">
-                            Mensal ({settings?.monthly_fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
-                          </label>
-                        </div>
-                        
-                        <div className="flex items-center">
-                          <input 
-                            type="radio" 
-                            id="weekly" 
-                            name="payment-type" 
-                            value="weekly"
-                            checked={paymentType === 'weekly'}
-                            onChange={() => setPaymentType('weekly')}
-                            className="mr-2"
-                          />
-                          <label htmlFor="weekly">
-                            Semanal ({settings?.weekly_fee.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="receipt-url">URL do Comprovante (opcional)</Label>
-                      <Input 
-                        id="receipt-url"
-                        type="text"
-                        placeholder="https://exemplo.com/comprovante.jpg"
-                        value={receiptURL}
-                        onChange={(e) => setReceiptURL(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="pt-4">
-                      <h4 className="text-sm font-medium mb-2">Informações para PIX</h4>
-                      <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md text-sm">
-                        {/* Display QR code image if available */}
-                        {settings?.pix_qrcode && (
-                          <div className="flex justify-center mb-3">
-                            <img 
-                              src={settings.pix_qrcode} 
-                              alt="QR Code PIX" 
-                              className="max-h-40"
-                            />
-                          </div>
-                        )}
-                        <p>Após realizar o pagamento via PIX, envie o comprovante ao administrador ou adicione a URL do comprovante acima.</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <DialogFooter>
-                    <Button 
-                      onClick={handleSubmitPayment}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : "Registrar Pagamento"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardFooter>
-          </Card>
-        </div>
-        
-        {/* Right Column: Recent Payments */}
-        <div>
-          <Card>
-            <CardHeader>
-              <CardTitle>Meus Pagamentos</CardTitle>
-              <CardDescription>
-                Histórico dos seus pagamentos recentes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {payments.filter(p => p.user_id === user?.id).length === 0 ? (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                    Você ainda não possui pagamentos registrados.
-                  </p>
-                ) : (
-                  payments
-                    .filter(p => p.user_id === user?.id)
-                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                    .slice(0, 5)
-                    .map((payment) => (
-                      <div 
-                        key={payment.id}
-                        className="border-b border-gray-200 dark:border-gray-700 last:border-0 pb-4 last:pb-0"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="font-medium">
-                              {payment.payment_type === 'monthly' ? 'Pagamento Mensal' : 'Pagamento Semanal'}
-                            </div>
-                            <div className="text-sm text-gray-500 dark:text-gray-400">
-                              {new Date(payment.created_at).toLocaleDateString('pt-BR')}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium">
-                              {payment.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                            </div>
-                            <div className={`text-sm ${
-                              payment.status === 'approved' 
-                                ? 'text-green-600 dark:text-green-400' 
-                                : 'text-yellow-600 dark:text-yellow-400'
-                            }`}>
-                              {payment.status === 'approved' ? 'Aprovado' : 'Pendente'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+    <PageContainer 
+      title="Contabilidade"
+      description="Gerencie pagamentos e acompanhe a contabilidade do vôlei."
+    >
+      <div className="mb-6">
+        <TabNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
       </div>
+
+      {activeTab === "overview" ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Arrecadado</h3>
+              <p className="text-3xl font-bold text-green-500">
+                R$ {calculateTotalCollected().toFixed(2)}
+              </p>
+              {settings && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Meta mensal: R$ {settings.monthly_goal.toFixed(2)}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-orange-500">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Pendente</h3>
+              <p className="text-3xl font-bold text-orange-500">
+                R$ {calculatePending().toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {payments.filter(p => p.status === "pending").length} pagamentos aguardando aprovação
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-volleyball-purple">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Status do Mês</h3>
+              <p className="text-3xl font-bold text-volleyball-purple">
+                {calculateProgress()}%
+              </p>
+              {settings && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                  Faltam R$ {(settings.monthly_goal - calculateTotalCollected()).toFixed(2)}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Seus Pagamentos</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Histórico dos seus pagamentos recentes
+            </p>
+
+            {userPayments.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>Você ainda não realizou nenhum pagamento.</p>
+                <Button 
+                  className="mt-4 volleyball-button-primary"
+                  onClick={() => setActiveTab("payment")}
+                >
+                  Realizar Pagamento
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {userPayments.map(payment => (
+                      <tr key={payment.id}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {new Date(payment.created_at).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap capitalize">
+                          {payment.payment_type === "monthly" ? "Mensalista" : "Avulso"}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          R$ {payment.amount.toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            payment.status === "approved" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {payment.status === "approved" ? "Aprovado" : "Pendente"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="text-right mt-4">
+              <Button
+                className="volleyball-button-primary"
+                onClick={() => setActiveTab("payment")}
+              >
+                Realizar Novo Pagamento
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Realizar Pagamento</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Escolha o tipo de pagamento e anexe o comprovante
+            </p>
+
+            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="paymentType" className="block text-sm font-medium mb-1">
+                  Tipo de Pagamento
+                </label>
+                <Select 
+                  value={paymentType} 
+                  onValueChange={(val) => setPaymentType(val as "monthly" | "weekly")}
+                >
+                  <SelectTrigger id="paymentType">
+                    <SelectValue placeholder="Selecione o tipo de pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Mensalista (R$ {settings?.monthly_fee.toFixed(2)})</SelectItem>
+                    <SelectItem value="weekly">Avulso (R$ {settings?.weekly_fee.toFixed(2)})</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label htmlFor="receiptUrl" className="block text-sm font-medium mb-1">
+                  Link do Comprovante (Opcional)
+                </label>
+                <Input
+                  id="receiptUrl"
+                  type="text"
+                  value={receiptUrl}
+                  onChange={(e) => setReceiptUrl(e.target.value)}
+                  placeholder="Cole o link da imagem do comprovante"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Você pode fazer upload da imagem em um serviço como Imgur e colar o link aqui.
+                </p>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full volleyball-button-primary" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Confirmando Pagamento..." : "Confirmar Pagamento"}
+              </Button>
+            </form>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">QR Code PIX</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Escaneie o QR Code para realizar o pagamento
+            </p>
+
+            <div className="flex justify-center mb-4">
+              {settings?.pix_qrcode ? (
+                <img 
+                  src={settings.pix_qrcode} 
+                  alt="QR Code PIX" 
+                  className="max-w-full h-auto border p-2 bg-white" 
+                  style={{ maxHeight: "240px" }}
+                />
+              ) : (
+                <div className="border border-dashed border-gray-300 p-6 rounded-lg flex items-center justify-center text-gray-500">
+                  QR Code não disponível
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+              Após o pagamento, registre-o no formulário ao lado.
+            </p>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }

@@ -73,11 +73,3 @@ export interface ThemeOptions {
   mode: 'light' | 'dark';
   colorScheme: 'purple' | 'blue' | 'green' | 'orange';
 }
-
-export interface ScoreboardSettings {
-  id: string;
-  team_a_color: string;
-  team_b_color: string;
-  created_at?: string | null;
-  updated_at?: string | null;
-}
