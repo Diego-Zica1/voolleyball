@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -267,6 +266,7 @@ export const createGame = async (game: Omit<Game, 'id' | 'created_at'>): Promise
 export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise<any> => {
   try {
     console.log("Updating user admin status:", userId, isAdmin);
+    // Use upsert to handle both update and insert cases
     const { data, error } = await supabase
       .from('profiles')
       .update({ is_admin: isAdmin })
@@ -302,6 +302,78 @@ export const updatePaymentStatus = async (paymentId: string, status: 'pending' |
     return data;
   } catch (error) {
     console.error("Error in updatePaymentStatus:", error);
+    throw error;
+  }
+};
+
+// Function to get all users with their admin status
+export const getAllUsers = async (): Promise<User[]> => {
+  try {
+    console.log("Fetching all users with admin status...");
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+      
+    if (error) {
+      console.error("Error fetching users:", error);
+      throw error;
+    }
+    
+    console.log("All users fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    return [];
+  }
+};
+
+// Get scoreboard settings
+export const getScoreboardSettings = async () => {
+  try {
+    console.log("Fetching scoreboard settings...");
+    const { data, error } = await supabase
+      .from('scoreboard_settings')
+      .select('*')
+      .single();
+      
+    if (error) {
+      console.error("Error fetching scoreboard settings:", error);
+      throw error;
+    }
+    
+    console.log("Scoreboard settings fetched:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getScoreboardSettings:", error);
+    // Return default settings if fetch fails
+    return {
+      team_a_color: '#8B5CF6', // Default purple
+      team_b_color: '#10B981'  // Default green
+    };
+  }
+};
+
+// Update scoreboard settings
+export const updateScoreboardSettings = async (teamAColor: string, teamBColor: string) => {
+  try {
+    console.log("Updating scoreboard settings:", { teamAColor, teamBColor });
+    const { data, error } = await supabase
+      .from('scoreboard_settings')
+      .update({ 
+        team_a_color: teamAColor, 
+        team_b_color: teamBColor,
+        updated_at: new Date().toISOString()
+      });
+      
+    if (error) {
+      console.error("Error updating scoreboard settings:", error);
+      throw error;
+    }
+    
+    console.log("Scoreboard settings updated successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in updateScoreboardSettings:", error);
     throw error;
   }
 };
