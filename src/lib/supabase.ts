@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -107,7 +108,11 @@ export const getPlayerAttributes = async (userId: string): Promise<Player | null
     }
     
     console.log("Player attributes fetched:", data);
-    return data;
+    // Convert JSON attributes to PlayerAttributes type
+    if (data && typeof data.attributes === 'object') {
+      return data as unknown as Player;
+    }
+    return null;
   } catch (error) {
     console.error("Error in getPlayerAttributes:", error);
     return null;
@@ -117,9 +122,10 @@ export const getPlayerAttributes = async (userId: string): Promise<Player | null
 export const updatePlayerAttributes = async (playerId: string, attributes: PlayerAttributes): Promise<any> => {
   try {
     console.log("Updating player attributes:", playerId, attributes);
+    // Convert PlayerAttributes to JSON compatible object
     const { data, error } = await supabase
       .from('players')
-      .update({ attributes })
+      .update({ attributes: attributes as any })
       .eq('id', playerId);
       
     if (error) {
@@ -148,7 +154,14 @@ export const getAllPlayers = async (): Promise<Player[]> => {
     }
     
     console.log("All players fetched:", data);
-    return data || [];
+    // Convert JSON attributes to PlayerAttributes type for each player
+    if (data && Array.isArray(data)) {
+      return data.map(player => ({
+        ...player,
+        attributes: player.attributes as unknown as PlayerAttributes
+      }));
+    }
+    return [];
   } catch (error) {
     console.error("Error in getAllPlayers:", error);
     return [];
@@ -169,12 +182,12 @@ export const getFinanceSettings = async (): Promise<FinanceSettings> => {
     }
     
     console.log("Finance settings fetched:", data);
+    // Return data with default values if necessary
     return data || {
       monthly_fee: 50,
       weekly_fee: 20,
       monthly_goal: 800,
-      pix_qrcode: 'https://placeholder.com/qrcode',
-      id: ''
+      pix_qrcode: 'https://placeholder.com/qrcode'
     };
   } catch (error) {
     console.error("Error in getFinanceSettings:", error);
@@ -182,8 +195,7 @@ export const getFinanceSettings = async (): Promise<FinanceSettings> => {
       monthly_fee: 50,
       weekly_fee: 20,
       monthly_goal: 800,
-      pix_qrcode: 'https://placeholder.com/qrcode',
-      id: ''
+      pix_qrcode: 'https://placeholder.com/qrcode'
     };
   }
 };
@@ -221,7 +233,11 @@ export const getAllPayments = async (): Promise<Payment[]> => {
     }
     
     console.log("All payments fetched:", data);
-    return data || [];
+    // Cast the payment_type to ensure it matches our type definition
+    if (data && Array.isArray(data)) {
+      return data as unknown as Payment[];
+    }
+    return [];
   } catch (error) {
     console.error("Error in getAllPayments:", error);
     return [];

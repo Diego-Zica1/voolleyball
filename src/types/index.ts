@@ -55,13 +55,14 @@ export interface Payment {
   user_id: string;
   username: string;
   amount: number;
-  payment_type: 'monthly' | 'weekly';
+  payment_type: 'monthly' | 'weekly' | string;
   receipt_url: string | null;
-  status: 'pending' | 'approved';
+  status: 'pending' | 'approved' | string;
   created_at: string;
 }
 
 export interface FinanceSettings {
+  id?: string;
   monthly_fee: number;
   weekly_fee: number;
   monthly_goal: number;
