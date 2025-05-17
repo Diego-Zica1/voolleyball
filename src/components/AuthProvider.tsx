@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '../types';
@@ -15,6 +14,7 @@ type AuthProviderState = {
   signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error?: { message: string } }>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<{ error?: { message: string } }>;
 };
 
 const AuthContext = createContext<AuthProviderState | undefined>(undefined);
@@ -169,6 +169,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      
+      if (error) {
+        console.error("Google sign in error:", error);
+        toast({
+          title: "Erro no login com Google",
+          description: error.message || "Falha no login com Google",
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      return {};
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      toast({
+        title: "Erro no login com Google",
+        description: error.message || "Falha no login com Google",
+        variant: "destructive",
+      });
+      return { error: { message: error.message || 'Falha no login com Google' } };
+    }
+  };
+
   const signUp = async (email: string, password: string, username: string) => {
     try {
       console.log("Attempting to sign up:", email, username);
@@ -222,7 +253,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

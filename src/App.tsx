@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Header } from "./components/Header";
+import { useAuth } from "./components/AuthProvider";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -22,15 +23,101 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // This is a placeholder for auth check
-  // In a real app, you'd check if the user is authenticated
-  const isAuthenticated = true;
+  const { user, isLoading } = useAuth();
   
-  if (!isAuthenticated) {
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
+    </div>;
+  }
+  
+  if (!user) {
     return <Navigate to="/login" />;
   }
   
   return <>{children}</>;
+};
+
+// Auth check component that redirects logged in users away from login page
+const AuthCheck = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
+    </div>;
+  }
+  
+  if (user) {
+    return <Navigate to="/" />;
+  }
+  
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route 
+        path="/login" 
+        element={
+          <AuthCheck>
+            <LoginPage />
+          </AuthCheck>
+        } 
+      />
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <Header />
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/atributos"
+        element={
+          <ProtectedRoute>
+            <Header />
+            <AttributesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/times"
+        element={
+          <ProtectedRoute>
+            <Header />
+            <TeamsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contabilidade"
+        element={
+          <ProtectedRoute>
+            <Header />
+            <FinancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route 
+        path="/placar" 
+        element={<ScoreboardPage />} 
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Header />
+            <AdminPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 };
 
 const App = () => (
@@ -42,56 +129,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <div className="min-h-screen">
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route
-                  path="/"
-                  element={
-                    <>
-                      <Header />
-                      <HomePage />
-                    </>
-                  }
-                />
-                <Route
-                  path="/atributos"
-                  element={
-                    <>
-                      <Header />
-                      <AttributesPage />
-                    </>
-                  }
-                />
-                <Route
-                  path="/times"
-                  element={
-                    <>
-                      <Header />
-                      <TeamsPage />
-                    </>
-                  }
-                />
-                <Route
-                  path="/contabilidade"
-                  element={
-                    <>
-                      <Header />
-                      <FinancePage />
-                    </>
-                  }
-                />
-                <Route path="/placar" element={<ScoreboardPage />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <>
-                      <Header />
-                      <AdminPage />
-                    </>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              <AppRoutes />
             </div>
           </BrowserRouter>
         </TooltipProvider>

@@ -207,6 +207,30 @@ export type Database = {
         }
         Relationships: []
       }
+      scoreboard_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          team_a_color: string
+          team_b_color: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          team_a_color?: string
+          team_b_color?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          team_a_color?: string
+          team_b_color?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

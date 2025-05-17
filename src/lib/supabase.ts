@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -359,5 +358,96 @@ export const initializeDatabase = async (): Promise<void> => {
     }
   } catch (error) {
     console.error("Error initializing database:", error);
+  }
+};
+
+export const getAllUsers = async (): Promise<User[]> => {
+  try {
+    console.log("Fetching all users...");
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
+      
+    if (error) {
+      console.error("Error fetching all users:", error);
+      throw error;
+    }
+    
+    console.log("All users fetched:", data);
+    // Convert database structure to match User type
+    if (data && Array.isArray(data)) {
+      return data.map(profile => ({
+        id: profile.id,
+        email: profile.email,
+        username: profile.username,
+        isAdmin: profile.is_admin,
+        created_at: profile.created_at
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error("Error in getAllUsers:", error);
+    return [];
+  }
+};
+
+export const getScoreboardSettings = async (): Promise<{ team_a_color: string, team_b_color: string } | null> => {
+  try {
+    console.log("Fetching scoreboard settings...");
+    const { data, error } = await supabase
+      .from('scoreboard_settings')
+      .select('*')
+      .maybeSingle();
+      
+    if (error) {
+      console.error("Error fetching scoreboard settings:", error);
+      throw error;
+    }
+    
+    console.log("Scoreboard settings fetched:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getScoreboardSettings:", error);
+    return null;
+  }
+};
+
+export const updateScoreboardSettings = async (settings: { team_a_color: string, team_b_color: string }): Promise<boolean> => {
+  try {
+    console.log("Updating scoreboard settings:", settings);
+    const { data: existingSettings } = await supabase
+      .from('scoreboard_settings')
+      .select('id')
+      .limit(1);
+
+    let error;
+
+    if (existingSettings && existingSettings.length > 0) {
+      // Update existing settings
+      const { error: updateError } = await supabase
+        .from('scoreboard_settings')
+        .update(settings)
+        .eq('id', existingSettings[0].id);
+      
+      error = updateError;
+    } else {
+      // Insert new settings
+      const { error: insertError } = await supabase
+        .from('scoreboard_settings')
+        .insert(settings);
+      
+      error = insertError;
+    }
+    
+    if (error) {
+      console.error("Error updating scoreboard settings:", error);
+      throw error;
+    }
+    
+    console.log("Scoreboard settings updated successfully");
+    return true;
+  } catch (error) {
+    console.error("Error in updateScoreboardSettings:", error);
+    return false;
   }
 };

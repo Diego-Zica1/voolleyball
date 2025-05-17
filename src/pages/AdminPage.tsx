@@ -9,14 +9,17 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { 
-  getAllPlayers, 
+  getAllUsers, 
   getLatestGame, 
   createGame, 
   updateUserAdmin, 
   getAllPayments,
-  updatePaymentStatus
+  updatePaymentStatus,
+  getScoreboardSettings,
+  updateScoreboardSettings
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
+import { Loader2, RefreshCw } from "lucide-react";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("controls");
@@ -30,6 +33,10 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
+  const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
+  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
+  const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+  const [isSavingColors, setIsSavingColors] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -38,7 +45,8 @@ export default function AdminPage() {
   const tabs = [
     { id: "controls", label: "Controles de Administrador" },
     { id: "payments", label: "Pagamentos Pendentes" },
-    { id: "schedule", label: "Agendar Novo Jogo" }
+    { id: "schedule", label: "Agendar Novo Jogo" },
+    { id: "scoreboard", label: "Configurar Placar" }
   ];
 
   useEffect(() => {
@@ -55,15 +63,9 @@ export default function AdminPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const players = await getAllPlayers();
-        // Extract users from players
-        const usersList = players.map(player => ({
-          id: player.user_id,
-          username: player.username,
-          email: "", // This would come from real auth system
-          isAdmin: false, // This would come from real auth system
-          created_at: "" // This would come from real auth system
-        }));
+        
+        // Fetch all users
+        const usersList = await getAllUsers();
         setUsers(usersList);
         
         // Set default date to next Saturday
@@ -79,6 +81,13 @@ export default function AdminPage() {
         // Fetch pending payments
         const payments = await getAllPayments();
         setPendingPayments(payments.filter(p => p.status === 'pending'));
+        
+        // Fetch scoreboard settings
+        const scoreboardSettings = await getScoreboardSettings();
+        if (scoreboardSettings) {
+          setTeamAColor(scoreboardSettings.team_a_color);
+          setTeamBColor(scoreboardSettings.team_b_color);
+        }
       } catch (error) {
         console.error("Error fetching admin data:", error);
       } finally {
@@ -142,8 +151,10 @@ export default function AdminPage() {
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
+      setIsTogglingAdmin(userId);
       await updateUserAdmin(userId, isAdmin);
       
+      // Update the local state to reflect the change
       setUsers(users.map(u => 
         u.id === userId ? { ...u, isAdmin } : u
       ));
@@ -159,6 +170,8 @@ export default function AdminPage() {
         description: "Não foi possível atualizar o status de administrador",
         variant: "destructive",
       });
+    } finally {
+      setIsTogglingAdmin(null);
     }
   };
   
@@ -186,11 +199,64 @@ export default function AdminPage() {
       setIsApprovingPayment(null);
     }
   };
+  
+  const handleSaveScoreboardColors = async () => {
+    try {
+      setIsSavingColors(true);
+      
+      const success = await updateScoreboardSettings({
+        team_a_color: teamAColor,
+        team_b_color: teamBColor
+      });
+      
+      if (success) {
+        toast({
+          title: "Cores salvas",
+          description: "As cores do placar foram atualizadas com sucesso",
+        });
+      } else {
+        throw new Error("Failed to update colors");
+      }
+    } catch (error) {
+      console.error("Error saving scoreboard colors:", error);
+      toast({
+        title: "Erro ao salvar cores",
+        description: "Não foi possível atualizar as cores do placar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingColors(false);
+    }
+  };
+
+  const refreshUsersList = async () => {
+    try {
+      setIsLoading(true);
+      const usersList = await getAllUsers();
+      setUsers(usersList);
+      toast({
+        title: "Lista atualizada",
+        description: "A lista de usuários foi atualizada com sucesso",
+      });
+    } catch (error) {
+      console.error("Error refreshing users list:", error);
+      toast({
+        title: "Erro ao atualizar lista",
+        description: "Não foi possível atualizar a lista de usuários",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <PageContainer title="Painel de Administração">
-        <div className="text-center">Carregando painel administrativo...</div>
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto" />
+          <p className="mt-2">Carregando painel administrativo...</p>
+        </div>
       </PageContainer>
     );
   }
@@ -225,13 +291,27 @@ export default function AdminPage() {
           </div>
 
           <div className="mt-8">
-            <h3 className="text-lg font-medium mb-4">Gerenciar Usuários</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Gerenciar Usuários</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshUsersList}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Atualizar lista
+              </Button>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Usuário
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Admin
@@ -247,10 +327,21 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Switch 
-                          checked={user.isAdmin}
-                          onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
-                        />
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Switch 
+                            checked={user.isAdmin}
+                            onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
+                            disabled={isTogglingAdmin === user.id}
+                          />
+                          {isTogglingAdmin === user.id && (
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -420,6 +511,97 @@ export default function AdminPage() {
               {isSubmitting ? "Agendando Jogo..." : "Agendar Jogo"}
             </Button>
           </form>
+        </div>
+      )}
+
+      {activeTab === "scoreboard" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Configurar Cores do Placar</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="teamAColor" className="block text-sm font-medium mb-2">
+                Cor do Time A
+              </label>
+              <div className="flex gap-4 items-center">
+                <Input
+                  id="teamAColor"
+                  type="color"
+                  value={teamAColor}
+                  onChange={(e) => setTeamAColor(e.target.value)}
+                  className="w-20 h-10"
+                />
+                <Input 
+                  type="text" 
+                  value={teamAColor} 
+                  onChange={(e) => setTeamAColor(e.target.value)}
+                  className="w-32"
+                />
+                <div 
+                  className="w-20 h-10 rounded" 
+                  style={{ backgroundColor: teamAColor }}
+                ></div>
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="teamBColor" className="block text-sm font-medium mb-2">
+                Cor do Time B
+              </label>
+              <div className="flex gap-4 items-center">
+                <Input
+                  id="teamBColor"
+                  type="color"
+                  value={teamBColor}
+                  onChange={(e) => setTeamBColor(e.target.value)}
+                  className="w-20 h-10"
+                />
+                <Input 
+                  type="text" 
+                  value={teamBColor} 
+                  onChange={(e) => setTeamBColor(e.target.value)}
+                  className="w-32"
+                />
+                <div 
+                  className="w-20 h-10 rounded" 
+                  style={{ backgroundColor: teamBColor }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-6">
+              <h3 className="text-md font-medium mb-2">Prévia do Placar</h3>
+              <div className="flex gap-4">
+                <div 
+                  className="flex-1 h-24 rounded flex items-center justify-center"
+                  style={{ backgroundColor: teamAColor }}
+                >
+                  <span className="text-xl font-bold text-white">TIME A</span>
+                </div>
+                <div 
+                  className="flex-1 h-24 rounded flex items-center justify-center"
+                  style={{ backgroundColor: teamBColor }}
+                >
+                  <span className="text-xl font-bold text-white">TIME B</span>
+                </div>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleSaveScoreboardColors} 
+              className="w-full mt-4"
+              disabled={isSavingColors}
+            >
+              {isSavingColors ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Cores"
+              )}
+            </Button>
+          </div>
         </div>
       )}
     </PageContainer>
