@@ -14,10 +14,7 @@ import {
   createGame, 
   updateUserAdmin, 
   getAllPayments,
-  updatePaymentStatus,
-  getAllUsers,
-  getScoreboardSettings,
-  updateScoreboardSettings
+  updatePaymentStatus
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
 
@@ -33,12 +30,6 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
-  const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
-  
-  // Scoreboard settings state
-  const [teamAColor, setTeamAColor] = useState('#8B5CF6'); // Default purple
-  const [teamBColor, setTeamBColor] = useState('#10B981'); // Default green
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -47,7 +38,6 @@ export default function AdminPage() {
   const tabs = [
     { id: "controls", label: "Controles de Administrador" },
     { id: "payments", label: "Pagamentos Pendentes" },
-    { id: "scoreboard", label: "Configurações do Placar" },
     { id: "schedule", label: "Agendar Novo Jogo" }
   ];
 
@@ -65,9 +55,15 @@ export default function AdminPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        
-        // Get all users with admin status
-        const usersList = await getAllUsers();
+        const players = await getAllPlayers();
+        // Extract users from players
+        const usersList = players.map(player => ({
+          id: player.user_id,
+          username: player.username,
+          email: "", // This would come from real auth system
+          isAdmin: false, // This would come from real auth system
+          created_at: "" // This would come from real auth system
+        }));
         setUsers(usersList);
         
         // Set default date to next Saturday
@@ -83,13 +79,6 @@ export default function AdminPage() {
         // Fetch pending payments
         const payments = await getAllPayments();
         setPendingPayments(payments.filter(p => p.status === 'pending'));
-        
-        // Fetch scoreboard settings
-        const scoreboardSettings = await getScoreboardSettings();
-        if (scoreboardSettings) {
-          setTeamAColor(scoreboardSettings.team_a_color);
-          setTeamBColor(scoreboardSettings.team_b_color);
-        }
       } catch (error) {
         console.error("Error fetching admin data:", error);
       } finally {
@@ -153,10 +142,8 @@ export default function AdminPage() {
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
-      setIsTogglingAdmin(userId);
       await updateUserAdmin(userId, isAdmin);
       
-      // Update local state
       setUsers(users.map(u => 
         u.id === userId ? { ...u, isAdmin } : u
       ));
@@ -172,8 +159,6 @@ export default function AdminPage() {
         description: "Não foi possível atualizar o status de administrador",
         variant: "destructive",
       });
-    } finally {
-      setIsTogglingAdmin(null);
     }
   };
   
@@ -199,27 +184,6 @@ export default function AdminPage() {
       });
     } finally {
       setIsApprovingPayment(null);
-    }
-  };
-  
-  const saveScoreboardSettings = async () => {
-    try {
-      setIsSavingSettings(true);
-      await updateScoreboardSettings(teamAColor, teamBColor);
-      
-      toast({
-        title: "Configurações salvas",
-        description: "As cores do placar foram atualizadas com sucesso",
-      });
-    } catch (error) {
-      console.error("Error saving scoreboard settings:", error);
-      toast({
-        title: "Erro ao salvar configurações",
-        description: "Não foi possível salvar as cores do placar",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSavingSettings(false);
     }
   };
 
@@ -275,18 +239,17 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                  {users.map(u => (
-                    <tr key={u.id}>
+                  {users.map(user => (
+                    <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                          {u.username}
+                          {user.username}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Switch 
-                          checked={u.isAdmin}
-                          disabled={isTogglingAdmin === u.id}
-                          onCheckedChange={(checked) => toggleUserAdmin(u.id, checked)}
+                          checked={user.isAdmin}
+                          onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
                         />
                       </td>
                     </tr>
@@ -386,80 +349,6 @@ export default function AdminPage() {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {activeTab === "scoreboard" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Configurações do Placar</h2>
-          
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-md font-medium mb-3">Time A</h3>
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-12 h-12 rounded-full border shadow-sm"
-                  style={{ backgroundColor: teamAColor }}
-                />
-                <Input
-                  type="color"
-                  value={teamAColor}
-                  onChange={(e) => setTeamAColor(e.target.value)}
-                  className="w-16 h-10 p-1 bg-transparent"
-                />
-                <Input
-                  type="text"
-                  value={teamAColor}
-                  onChange={(e) => setTeamAColor(e.target.value)}
-                  className="w-32"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-md font-medium mb-3">Time B</h3>
-              <div className="flex items-center gap-4">
-                <div 
-                  className="w-12 h-12 rounded-full border shadow-sm"
-                  style={{ backgroundColor: teamBColor }}
-                />
-                <Input
-                  type="color"
-                  value={teamBColor}
-                  onChange={(e) => setTeamBColor(e.target.value)}
-                  className="w-16 h-10 p-1 bg-transparent"
-                />
-                <Input
-                  type="text"
-                  value={teamBColor}
-                  onChange={(e) => setTeamBColor(e.target.value)}
-                  className="w-32"
-                />
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-md font-medium mb-3">Prévia</h3>
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1 p-4 rounded-lg text-center text-white" style={{ backgroundColor: teamAColor }}>
-                  <div className="text-2xl font-bold mb-2">TIME A</div>
-                  <div className="text-5xl font-bold">12</div>
-                </div>
-                <div className="flex-1 p-4 rounded-lg text-center text-white" style={{ backgroundColor: teamBColor }}>
-                  <div className="text-2xl font-bold mb-2">TIME B</div>
-                  <div className="text-5xl font-bold">9</div>
-                </div>
-              </div>
-            </div>
-            
-            <Button
-              onClick={saveScoreboardSettings}
-              disabled={isSavingSettings}
-              className="volleyball-button-primary"
-            >
-              {isSavingSettings ? "Salvando..." : "Salvar Configurações"}
-            </Button>
-          </div>
         </div>
       )}
 

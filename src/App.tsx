@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./components/AuthProvider";
+import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Header } from "./components/Header";
 
@@ -22,105 +22,15 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
+  // This is a placeholder for auth check
+  // In a real app, you'd check if the user is authenticated
+  const isAuthenticated = true;
   
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
   
   return <>{children}</>;
-};
-
-// Route that redirects authenticated users to home
-const AuthRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin">Loading...</div>
-      </div>
-    );
-  }
-  
-  if (user) {
-    return <Navigate to="/" />;
-  }
-  
-  return <>{children}</>;
-};
-
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route 
-        path="/login" 
-        element={
-          <AuthRoute>
-            <LoginPage />
-          </AuthRoute>
-        } 
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/atributos"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <AttributesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/times"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <TeamsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contabilidade"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <FinancePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route 
-        path="/placar" 
-        element={<ScoreboardPage />} 
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
 };
 
 const App = () => (
@@ -132,7 +42,56 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <div className="min-h-screen">
-              <AppRoutes />
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <>
+                      <Header />
+                      <HomePage />
+                    </>
+                  }
+                />
+                <Route
+                  path="/atributos"
+                  element={
+                    <>
+                      <Header />
+                      <AttributesPage />
+                    </>
+                  }
+                />
+                <Route
+                  path="/times"
+                  element={
+                    <>
+                      <Header />
+                      <TeamsPage />
+                    </>
+                  }
+                />
+                <Route
+                  path="/contabilidade"
+                  element={
+                    <>
+                      <Header />
+                      <FinancePage />
+                    </>
+                  }
+                />
+                <Route path="/placar" element={<ScoreboardPage />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <>
+                      <Header />
+                      <AdminPage />
+                    </>
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
             </div>
           </BrowserRouter>
         </TooltipProvider>

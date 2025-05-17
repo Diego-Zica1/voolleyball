@@ -1,10 +1,10 @@
 
 import React, { useRef, useState, useEffect } from "react";
+import { PageContainer } from "@/components/PageContainer";
 import { ScoreboardMenu } from "@/components/ScoreboardMenu";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, RotateCcw } from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import { Header } from "@/components/Header";
-import { getScoreboardSettings } from "@/lib/supabase";
 
 export default function ScoreboardPage() {
   const scoreboardRef = useRef<HTMLDivElement>(null);
@@ -13,8 +13,6 @@ export default function ScoreboardPage() {
   const [teamBScore, setTeamBScore] = useState(0);
   const [currentSet, setCurrentSet] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [teamAColor, setTeamAColor] = useState('#8B5CF6');  // Default purple
-  const [teamBColor, setTeamBColor] = useState('#10B981');  // Default green
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -22,21 +20,6 @@ export default function ScoreboardPage() {
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    // Fetch scoreboard color settings
-    const fetchSettings = async () => {
-      try {
-        const settings = await getScoreboardSettings();
-        if (settings) {
-          setTeamAColor(settings.team_a_color);
-          setTeamBColor(settings.team_b_color);
-        }
-      } catch (error) {
-        console.error('Error fetching scoreboard settings:', error);
-      }
-    };
-    
-    fetchSettings();
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -62,14 +45,6 @@ export default function ScoreboardPage() {
       setTeamBScore(prev => Math.max(0, prev - 1));
     }
   };
-  
-  const resetScore = (team: 'A' | 'B') => {
-    if (team === 'A') {
-      setTeamAScore(0);
-    } else {
-      setTeamBScore(0);
-    }
-  };
 
   return (
     <>
@@ -78,18 +53,19 @@ export default function ScoreboardPage() {
       
       {/* Menu de controles (visível apenas quando não estiver em fullscreen ou quando showControls for true) */}
       {showControls && !isFullscreen && (
-        <div className="container mx-auto px-4 py-8 mt-16">
-          <h1 className="text-2xl font-bold text-center mb-6">Placar</h1>
-          <p className="text-center text-muted-foreground">
-            Configure o placar conforme necessário. Clique no botão de tela cheia para exibir somente o placar.
-          </p>
-        </div>
+        <PageContainer title="Placar">
+          <div className="text-center">
+            <p className="mt-4 text-muted-foreground">
+              Configure o placar conforme necessário. Clique no botão de tela cheia para exibir somente o placar.
+            </p>
+          </div>
+        </PageContainer>
       )}
       
       {/* Placar principal (referenciado para o modo tela cheia) */}
       <div 
         ref={scoreboardRef}
-        className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full mx-auto max-w-7xl' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
+        className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
       >
         <div className={`w-full h-full max-w-full mx-auto ${!showControls || isFullscreen ? 'p-0' : ''}`}>
           <div className={`flex flex-col md:flex-row justify-between ${
@@ -98,13 +74,9 @@ export default function ScoreboardPage() {
             {/* Time A */}
             <div className={`flex-1 ${
               isFullscreen 
-                ? 'h-full flex flex-col justify-center' 
+                ? 'h-full flex flex-col justify-center bg-gradient-to-br from-volleyball-purple-900 to-black' 
                 : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
-            }`}
-            style={{ 
-              backgroundColor: isFullscreen ? teamAColor : undefined,
-              background: isFullscreen ? `linear-gradient(135deg, ${teamAColor} 0%, ${teamAColor}cc 100%)` : undefined
-            }}>
+            }`}>
               <h2 className={`${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
@@ -136,15 +108,29 @@ export default function ScoreboardPage() {
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
-                <Button 
-                  variant="outline"
-                  size="icon"
-                  onClick={() => resetScore('A')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
-                >
-                  <RotateCcw className="h-5 w-5" />
-                </Button>
               </div>
+              
+              {/* Botões de controle flutuantes (visíveis apenas no modo fullscreen) */}
+              {isFullscreen && (
+                <div className="absolute top-8 left-8 flex flex-col gap-2">
+                  <Button 
+                    variant="outline"
+                    size="icon"
+                    onClick={() => decrementScore('A')}
+                    className="rounded-full bg-black/30 hover:bg-black/50 text-white"
+                  >
+                    <Minus className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="icon"
+                    onClick={() => incrementScore('A')}
+                    className="rounded-full bg-black/30 hover:bg-black/50 text-white"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
             </div>
             
             {/* Informações do Set (visível apenas quando não estiver em fullscreen) */}
@@ -162,13 +148,9 @@ export default function ScoreboardPage() {
             {/* Time B */}
             <div className={`flex-1 ${
               isFullscreen 
-                ? 'h-full flex flex-col justify-center' 
+                ? 'h-full flex flex-col justify-center bg-gradient-to-bl from-volleyball-green-900 to-black' 
                 : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
-            }`}
-            style={{ 
-              backgroundColor: isFullscreen ? teamBColor : undefined,
-              background: isFullscreen ? `linear-gradient(135deg, ${teamBColor} 0%, ${teamBColor}cc 100%)` : undefined
-            }}>
+            }`}>
               <h2 className={`${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
@@ -200,15 +182,29 @@ export default function ScoreboardPage() {
                 >
                   <Plus className="h-5 w-5" />
                 </Button>
-                <Button 
-                  variant="outline"
-                  size="icon"
-                  onClick={() => resetScore('B')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
-                >
-                  <RotateCcw className="h-5 w-5" />
-                </Button>
               </div>
+              
+              {/* Botões de controle flutuantes (visíveis apenas no modo fullscreen) */}
+              {isFullscreen && (
+                <div className="absolute top-8 right-8 flex flex-col gap-2">
+                  <Button 
+                    variant="outline"
+                    size="icon"
+                    onClick={() => decrementScore('B')}
+                    className="rounded-full bg-black/30 hover:bg-black/50 text-white"
+                  >
+                    <Minus className="h-5 w-5" />
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="icon"
+                    onClick={() => incrementScore('B')}
+                    className="rounded-full bg-black/30 hover:bg-black/50 text-white"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -217,6 +213,7 @@ export default function ScoreboardPage() {
       {/* Menu flutuante sempre visível */}
       <ScoreboardMenu 
         scoreboardRef={scoreboardRef}
+        onToggleMenu={toggleControls}
       />
     </>
   );

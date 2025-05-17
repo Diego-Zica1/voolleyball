@@ -3,17 +3,14 @@ import { cn } from "@/lib/utils";
 
 interface VolleyballIconProps extends React.SVGProps<SVGSVGElement> {
   className?: string;
-  size?: number;  // Add size prop to the interface
 }
 
-export function VolleyballIcon({ className, size, ...props }: VolleyballIconProps) {
+export function VolleyballIcon({ className, ...props }: VolleyballIconProps) {
   return (
     <svg 
       xmlns="http://www.w3.org/2000/svg" 
       viewBox="0 0 24 24" 
       className={cn("h-6 w-6", className)} 
-      width={size}  // Use size for width if provided
-      height={size}  // Use size for height if provided
       fill="none" 
       stroke="currentColor" 
       strokeWidth="2" 

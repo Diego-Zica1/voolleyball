@@ -1,239 +1,226 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FcGoogle } from 'react-icons/fc';
+import { VolleyballIcon } from "../components/VolleyballIcon";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/AuthProvider";
-import { VolleyballIcon } from "@/components/VolleyballIcon";
+import { createAdminUser, createRegularUser } from "@/utils/createTestUsers";
+import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [signupEmail, setSignupEmail] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupUsername, setSignupUsername] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const { user, isLoading, signIn, signUp, signInWithGoogle } = useAuth();
-  const { toast } = useToast();
+  const [username, setUsername] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCreatingTestUsers, setIsCreatingTestUsers] = useState(false);
+  
+  const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !isLoading) {
-      navigate("/");
-    }
-  }, [user, isLoading, navigate]);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    
+    setIsLoading(true);
+
     try {
-      const result = await signIn(email, password);
-      
-      if (result.error) {
-        throw new Error(result.error.message);
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast({
+            title: "Erro ao entrar",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Login bem-sucedido!",
+            description: "Bem-vindo de volta!",
+          });
+          navigate("/");
+        }
+      } else {
+        if (!username) {
+          toast({
+            title: "Nome de usuário obrigatório",
+            description: "Por favor, informe um nome de usuário",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        
+        const { error } = await signUp(email, password, username);
+        if (error) {
+          toast({
+            title: "Erro ao criar conta",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Conta criada com sucesso!",
+            description: "Você já pode acessar a plataforma.",
+          });
+          navigate("/");
+        }
       }
     } catch (error: any) {
       toast({
-        title: "Erro ao fazer login",
-        description: error.message || "Credenciais inválidas",
+        title: "Erro",
+        description: error.message || "Ocorreu um erro durante a autenticação",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
+  const handleCreateTestUsers = async () => {
+    setIsCreatingTestUsers(true);
     try {
-      if (!signupUsername.trim()) {
-        throw new Error("Nome de usuário é obrigatório");
-      }
-      
-      if (signupPassword.length < 6) {
-        throw new Error("Senha deve ter pelo menos 6 caracteres");
-      }
-      
-      const result = await signUp(signupEmail, signupPassword, signupUsername);
-      
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
-      
+      await createAdminUser();
+      await createRegularUser();
       toast({
-        title: "Cadastro realizado",
-        description: "Conta criada com sucesso! Você já está logado.",
+        title: "Usuários de teste criados",
+        description: "Admin: admin@example.com (senha: admin123456) e Jogador: jogador@example.com (senha: jogador123456)",
       });
     } catch (error: any) {
       toast({
-        title: "Erro ao criar conta",
-        description: error.message || "Não foi possível criar sua conta",
+        title: "Erro ao criar usuários de teste",
+        description: error.message || "Ocorreu um erro ao criar os usuários",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsCreatingTestUsers(false);
     }
   };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await signInWithGoogle();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao fazer login com Google",
-        description: error.message || "Não foi possível conectar com Google",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin">
-          <VolleyballIcon size={48} />
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="flex flex-col items-center mb-8">
-        <VolleyballIcon size={64} />
-        <h1 className="text-3xl font-bold mt-4">Desafinados da Quadra</h1>
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="w-full max-w-md">
+        <div className="flex flex-col items-center mb-6">
+          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-2" />
+          <h1 className="text-2xl font-bold">Desafinados da Quadra</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            {isLogin ? "Entre para gerenciar seus jogos de vôlei" : "Crie uma conta para participar"}
+          </p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+          <div className="flex mb-6">
+            <button
+              className={`flex-1 py-2 text-center ${
+                isLogin
+                  ? "border-b-2 border-volleyball-purple text-volleyball-purple"
+                  : "text-gray-500 border-b border-gray-300"
+              }`}
+              onClick={() => setIsLogin(true)}
+            >
+              Entrar
+            </button>
+            <button
+              className={`flex-1 py-2 text-center ${
+                !isLogin
+                  ? "border-b-2 border-volleyball-purple text-volleyball-purple"
+                  : "text-gray-500 border-b border-gray-300"
+              }`}
+              onClick={() => setIsLogin(false)}
+            >
+              Cadastrar
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Nome de Usuário
+                </label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Seu nome de usuário"
+                  required={!isLogin}
+                  className="w-full"
+                />
+              </div>
+            )}
+            
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                required
+                className="w-full"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Senha
+              </label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="********"
+                required
+                className="w-full"
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full bg-volleyball-purple hover:bg-volleyball-purple/90" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Carregando...
+                </>
+              ) : (
+                isLogin ? "Entrar" : "Cadastrar"
+              )}
+            </Button>
+          </form>
+
+          {/* Botão para criar usuários de teste (visível apenas em desenvolvimento) */}
+          <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 text-center">
+              Ambiente de desenvolvimento
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={handleCreateTestUsers}
+              disabled={isCreatingTestUsers}
+            >
+              {isCreatingTestUsers ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando usuários de teste...
+                </>
+              ) : (
+                "Criar usuários de teste (admin e jogador)"
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
-      
-      <Card className="w-full max-w-md">
-        <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Cadastro</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="login">
-            <CardHeader>
-              <CardTitle>Login</CardTitle>
-              <CardDescription>
-                Entre na sua conta para acessar o sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin}>
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">E-mail</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Senha</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Entrando..." : "Entrar"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="outline" 
-                onClick={handleGoogleLogin}
-                className="w-full"
-              >
-                <FcGoogle className="mr-2 h-5 w-5" />
-                Entrar com Google
-              </Button>
-            </CardFooter>
-          </TabsContent>
-          
-          <TabsContent value="signup">
-            <CardHeader>
-              <CardTitle>Cadastro</CardTitle>
-              <CardDescription>
-                Crie sua conta para participar dos jogos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSignup}>
-                <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="username">Nome de usuário</Label>
-                    <Input
-                      id="username"
-                      type="text"
-                      placeholder="Seu nome"
-                      value={signupUsername}
-                      onChange={(e) => setSignupUsername(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="signup-email">E-mail</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="signup-password">Senha</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Criando conta..." : "Criar conta"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                variant="outline" 
-                onClick={handleGoogleLogin}
-                className="w-full"
-              >
-                <FcGoogle className="mr-2 h-5 w-5" />
-                Cadastrar com Google
-              </Button>
-            </CardFooter>
-          </TabsContent>
-        </Tabs>
-      </Card>
     </div>
   );
 }

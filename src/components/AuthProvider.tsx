@@ -15,7 +15,6 @@ type AuthProviderState = {
   signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>;
   signUp: (email: string, password: string, username: string) => Promise<{ error?: { message: string } }>;
   signOut: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthProviderState | undefined>(undefined);
@@ -204,33 +203,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin
-        }
-      });
-      
-      if (error) {
-        console.error("Google sign in error:", error);
-        toast({
-          title: "Erro no login com Google",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error('Error signing in with Google:', error);
-      toast({
-        title: "Erro no login com Google",
-        description: error.message || "Falha ao conectar com Google",
-        variant: "destructive",
-      });
-    }
-  };
-
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -250,7 +222,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
