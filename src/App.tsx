@@ -8,6 +8,7 @@ import { AuthProvider } from "./components/AuthProvider";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Header } from "./components/Header";
 import { useAuth } from "./components/AuthProvider";
+import { toast } from "./components/ui/use-toast";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -32,6 +33,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  // Check if the user is approved
+  if (user.is_approved === false) {
+    toast({
+      title: "Conta pendente de aprovação",
+      description: "Sua conta está aguardando aprovação do administrador.",
+      variant: "destructive",
+    });
     return <Navigate to="/login" />;
   }
   

@@ -49,6 +49,17 @@ export default function LoginPage() {
             description: error.message,
             variant: "destructive",
           });
+        } else {
+          toast({
+            title: "Conta criada com sucesso",
+            description: "Sua conta foi criada e está aguardando aprovação do administrador",
+          });
+          // Reset the form after successful registration
+          setEmail("");
+          setPassword("");
+          setUsername("");
+          // Switch to login view
+          setIsLogin(true);
         }
       }
     } catch (error: any) {
@@ -66,7 +77,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-2" size={64} />
+          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-2" />
           <h1 className="text-2xl font-bold">Desafinados da Quadra</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {isLogin ? "Entre para gerenciar seus jogos de vôlei" : "Crie uma conta para participar"}
