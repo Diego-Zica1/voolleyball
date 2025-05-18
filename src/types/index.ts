@@ -1,10 +1,10 @@
+
 export interface User {
   id: string;
   username: string;
   email: string;
   isAdmin: boolean;
   created_at: string;
-  is_approved: boolean;
 }
 
 export interface Player {
@@ -23,9 +23,6 @@ export interface PlayerAttributes {
   defesa: number;
   levantamento: number;
   condicionamento_fisico: number;
-  impulsao_vertical: number;
-  posicionamento: number;
-  lideranca: number;
 }
 
 export interface Game {
