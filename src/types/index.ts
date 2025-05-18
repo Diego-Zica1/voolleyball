@@ -4,7 +4,7 @@ export interface User {
   email: string;
   isAdmin: boolean;
   created_at: string;
-  is_approved?: boolean;
+  is_approved: boolean;
 }
 
 export interface Player {
