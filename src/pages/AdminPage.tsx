@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
@@ -12,6 +13,7 @@ import {
   getLatestGame, 
   createGame, 
   updateUserAdmin, 
+  updateUserApproval, // Import the missing function
   getAllPayments,
   updatePaymentStatus,
   getScoreboardSettings,

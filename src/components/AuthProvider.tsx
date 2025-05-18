@@ -52,7 +52,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
               email: session.user.email || '',
               username: profileData.username,
               isAdmin: profileData.is_admin,
-              created_at: profileData.created_at
+              created_at: profileData.created_at,
+              is_approved: profileData.is_approved || false // Use the is_approved from the profile or default to false
             });
             console.log("User profile fetched successfully:", profileData);
           } else {
@@ -110,7 +111,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   email: session.user.email || '',
                   username: profileData.username,
                   isAdmin: profileData.is_admin,
-                  created_at: profileData.created_at
+                  created_at: profileData.created_at,
+                  is_approved: profileData.is_approved || false // Use the is_approved from the profile or default to false
                 });
               } else {
                 console.error("No profile found on auth change");
