@@ -13,7 +13,7 @@ type ThemeProviderState = {
 };
 
 const initialTheme: ThemeOptions = {
-  mode: 'light',
+  mode: 'dark', // Modificado para 'dark'
   colorScheme: 'purple',
 };
 
