@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
@@ -33,7 +34,6 @@ export default function AdminPage() {
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
   const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
-  const [isPendingUserApproval, setIsPendingUserApproval] = useState<string | null>(null);
   const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
   const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
   const [isSavingColors, setIsSavingColors] = useState(false);
@@ -44,7 +44,6 @@ export default function AdminPage() {
 
   const tabs = [
     { id: "controls", label: "Controles de Administrador" },
-    { id: "users", label: "Gerenciar Usuários" },
     { id: "payments", label: "Pagamentos Pendentes" },
     { id: "schedule", label: "Agendar Novo Jogo" },
     { id: "scoreboard", label: "Configurar Placar" }
@@ -153,21 +152,17 @@ export default function AdminPage() {
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
       setIsTogglingAdmin(userId);
-      const result = await updateUserAdmin(userId, isAdmin);
+      await updateUserAdmin(userId, isAdmin);
       
-      if (result) {
-        // Update the local state to reflect the change
-        setUsers(users.map(u => 
-          u.id === userId ? { ...u, isAdmin } : u
-        ));
-        
-        toast({
-          title: "Permissão atualizada",
-          description: `O usuário agora ${isAdmin ? 'é' : 'não é mais'} um administrador`,
-        });
-      } else {
-        throw new Error("Falha ao atualizar status de administrador");
-      }
+      // Update the local state to reflect the change
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, isAdmin } : u
+      ));
+      
+      toast({
+        title: "Permissão atualizada",
+        description: `O usuário agora ${isAdmin ? 'é' : 'não é mais'} um administrador`,
+      });
     } catch (error) {
       console.error("Error updating user admin status:", error);
       toast({
@@ -177,38 +172,6 @@ export default function AdminPage() {
       });
     } finally {
       setIsTogglingAdmin(null);
-    }
-  };
-  
-  const handleApproveUser = async (userId: string, approve: boolean) => {
-    try {
-      setIsPendingUserApproval(userId);
-      
-      const result = await updateUserApproval(userId, approve);
-      
-      if (result) {
-        setUsers(users.map(u => 
-          u.id === userId ? { ...u, is_approved: approve } : u
-        ));
-        
-        toast({
-          title: approve ? "Usuário aprovado" : "Usuário reprovado",
-          description: approve ? 
-            "O usuário foi aprovado e já pode acessar o sistema" : 
-            "O usuário foi reprovado e não poderá acessar o sistema",
-        });
-      } else {
-        throw new Error("Falha ao atualizar status de aprovação");
-      }
-    } catch (error) {
-      console.error("Error updating user approval status:", error);
-      toast({
-        title: "Erro ao atualizar aprovação",
-        description: "Não foi possível atualizar o status de aprovação do usuário",
-        variant: "destructive",
-      });
-    } finally {
-      setIsPendingUserApproval(null);
     }
   };
   
@@ -326,116 +289,65 @@ export default function AdminPage() {
               Resetar Confirmações Agora
             </Button>
           </div>
-        </div>
-      )}
 
-      {activeTab === "users" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium">Gerenciar Usuários</h3>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshUsersList}
-              className="flex items-center gap-1"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Atualizar lista
-            </Button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Usuário
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Admin
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                {users.map(user => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                        {user.username}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {user.email}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.is_approved === undefined ? (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                          Legado
-                        </span>
-                      ) : user.is_approved ? (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Aprovado
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                          Pendente
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Switch 
-                          checked={user.isAdmin}
-                          onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
-                          disabled={isTogglingAdmin === user.id}
-                        />
-                        {isTogglingAdmin === user.id && (
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {user.is_approved === false && (
-                        <div className="flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="bg-green-500 hover:bg-green-600 text-white border-0"
-                            onClick={() => handleApproveUser(user.id, true)}
-                            disabled={isPendingUserApproval === user.id}
-                          >
-                            {isPendingUserApproval === user.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              'Aprovar'
-                            )}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            className="bg-red-500 hover:bg-red-600 text-white border-0"
-                            onClick={() => handleApproveUser(user.id, false)}
-                            disabled={isPendingUserApproval === user.id}
-                          >
-                            Rejeitar
-                          </Button>
-                        </div>
-                      )}
-                    </td>
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Gerenciar Usuários</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshUsersList}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Atualizar lista
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Admin
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                  {users.map(user => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                          {user.username}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Switch 
+                            checked={user.isAdmin}
+                            onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
+                            disabled={isTogglingAdmin === user.id}
+                          />
+                          {isTogglingAdmin === user.id && (
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

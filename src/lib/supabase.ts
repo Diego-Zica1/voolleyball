@@ -263,10 +263,10 @@ export const createGame = async (game: Omit<Game, 'id' | 'created_at'>): Promise
   }
 };
 
-export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise<boolean> => {
+export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise<any> => {
   try {
     console.log("Updating user admin status:", userId, isAdmin);
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .update({ is_admin: isAdmin })
       .eq('id', userId);
@@ -277,31 +277,10 @@ export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise
     }
     
     console.log("User admin status updated successfully");
-    return true;
+    return data;
   } catch (error) {
     console.error("Error in updateUserAdmin:", error);
-    return false;
-  }
-};
-
-export const updateUserApproval = async (userId: string, isApproved: boolean): Promise<boolean> => {
-  try {
-    console.log("Updating user approval status:", userId, isApproved);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_approved: isApproved })
-      .eq('id', userId);
-      
-    if (error) {
-      console.error("Error updating user approval status:", error);
-      throw error;
-    }
-    
-    console.log("User approval status updated successfully");
-    return true;
-  } catch (error) {
-    console.error("Error in updateUserApproval:", error);
-    return false;
+    throw error;
   }
 };
 
@@ -402,7 +381,6 @@ export const getAllUsers = async (): Promise<User[]> => {
         email: profile.email,
         username: profile.username,
         isAdmin: profile.is_admin,
-        is_approved: profile.is_approved,
         created_at: profile.created_at
       }));
     }
