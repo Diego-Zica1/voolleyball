@@ -12,7 +12,6 @@ export default function ScoreboardPage() {
   const [showControls, setShowControls] = useState(true);
   const [teamAScore, setTeamAScore] = useState(0);
   const [teamBScore, setTeamBScore] = useState(0);
-  const [currentSet, setCurrentSet] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
   const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
@@ -69,6 +68,12 @@ export default function ScoreboardPage() {
     }
   };
 
+  // Handle touch for mobile devices when in fullscreen
+  const handleTeamTouch = (team: 'A' | 'B') => {
+    if (!isFullscreen) return;
+    incrementScore(team);
+  };
+
   return (
     <>
       {/* Site Header (visible only when not in fullscreen) */}
@@ -95,14 +100,17 @@ export default function ScoreboardPage() {
             isFullscreen ? 'h-full' : 'gap-8'
           }`}>
             {/* Time A */}
-            <div className={`flex-1 ${
-              isFullscreen 
-                ? 'h-full flex flex-col justify-center' 
-                : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
-            }`}
-            style={{
-              background: isFullscreen ? `linear-gradient(to bottom right, ${teamAColor}, black)` : ''
-            }}>
+            <div 
+              className={`flex-1 ${
+                isFullscreen 
+                  ? 'h-full flex flex-col justify-center' 
+                  : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+              }`}
+              style={{
+                background: isFullscreen ? teamAColor : ''
+              }}
+              onClick={() => handleTeamTouch('A')}
+            >
               <h2 className={`${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
@@ -121,15 +129,21 @@ export default function ScoreboardPage() {
                 <Button 
                   variant="outline"
                   size="icon"
-                  onClick={() => decrementScore('A')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    decrementScore('A');
+                  }}
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white border-none bg-volleyball-red' : 'bg-volleyball-red text-white'}`}
                 >
                   <Minus className="h-5 w-5" />
                 </Button>
                 <Button 
                   variant="default"
                   size="icon"
-                  onClick={() => incrementScore('A')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    incrementScore('A');
+                  }}
                   className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-purple' : 'bg-volleyball-purple hover:bg-volleyball-purple/80'}`}
                 >
                   <Plus className="h-5 w-5" />
@@ -137,35 +151,29 @@ export default function ScoreboardPage() {
                 <Button 
                   variant="outline"
                   size="icon"
-                  onClick={() => resetScore('A')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetScore('A');
+                  }}
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white border-none' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
               </div>
             </div>
             
-            {/* Informações do Set (visível apenas quando não estiver em fullscreen) */}
-            {!isFullscreen && (
-              <div className="flex flex-col justify-center items-center">
-                <div className="text-xl md:text-3xl font-semibold mb-4 text-center">SET {currentSet}</div>
-                <div className="flex gap-2 md:gap-4">
-                  <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500"></div>
-                  <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-300"></div>
-                  <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-gray-300"></div>
-                </div>
-              </div>
-            )}
-            
             {/* Time B */}
-            <div className={`flex-1 ${
-              isFullscreen 
-                ? 'h-full flex flex-col justify-center' 
-                : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
-            }`}
-            style={{
-              background: isFullscreen ? `linear-gradient(to bottom left, ${teamBColor}, black)` : ''
-            }}>
+            <div 
+              className={`flex-1 ${
+                isFullscreen 
+                  ? 'h-full flex flex-col justify-center' 
+                  : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+              }`}
+              style={{
+                background: isFullscreen ? teamBColor : ''
+              }}
+              onClick={() => handleTeamTouch('B')}
+            >
               <h2 className={`${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
@@ -184,15 +192,21 @@ export default function ScoreboardPage() {
                 <Button 
                   variant="outline"
                   size="icon"
-                  onClick={() => decrementScore('B')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    decrementScore('B');
+                  }}
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white border-none bg-volleyball-red' : 'bg-volleyball-red text-white'}`}
                 >
                   <Minus className="h-5 w-5" />
                 </Button>
                 <Button 
                   variant="default"
                   size="icon"
-                  onClick={() => incrementScore('B')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    incrementScore('B');
+                  }}
                   className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-green' : 'bg-volleyball-green hover:bg-volleyball-green/80'}`}
                 >
                   <Plus className="h-5 w-5" />
@@ -200,8 +214,11 @@ export default function ScoreboardPage() {
                 <Button 
                   variant="outline"
                   size="icon"
-                  onClick={() => resetScore('B')}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resetScore('B');
+                  }}
+                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white border-none' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
