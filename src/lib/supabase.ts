@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -404,7 +403,7 @@ export const getAllUsers = async (): Promise<User[]> => {
         email: profile.email,
         username: profile.username,
         isAdmin: profile.is_admin,
-        is_approved: profile.is_approved || false, // Add a default value for is_approved
+        is_approved: profile.is_approved || false, // Now we can properly map this field
         created_at: profile.created_at
       }));
     }
