@@ -67,9 +67,19 @@ export interface FinanceSettings {
   weekly_fee: number;
   monthly_goal: number;
   pix_qrcode: string;
+  accumulated_balance: number;
+  last_month_processed: string;
 }
 
 export interface ThemeOptions {
   mode: 'light' | 'dark';
   colorScheme: 'purple' | 'blue' | 'green' | 'orange';
+}
+
+export interface Withdrawal {
+  id: string;
+  amount: number;
+  reason: string;
+  created_by: string;
+  created_at: string;
 }

@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, Withdrawal } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -181,12 +181,38 @@ export const getFinanceSettings = async (): Promise<FinanceSettings> => {
     }
     
     console.log("Finance settings fetched:", data);
+    
+    // If data exists, check if we need to process monthly accumulation
+    if (data) {
+      const currentDate = new Date();
+      const currentMonthYear = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      // If last_month_processed is not current month or is undefined, process the accumulation
+      if (!data.last_month_processed || !data.last_month_processed.startsWith(currentMonthYear)) {
+        await processMonthlyAccumulation(data);
+      }
+      
+      // Fetch updated settings after processing
+      const { data: updatedData, error: updatedError } = await supabase
+        .from('finance_settings')
+        .select('*')
+        .maybeSingle();
+        
+      if (updatedError) {
+        console.error("Error fetching updated finance settings:", updatedError);
+      } else if (updatedData) {
+        return updatedData;
+      }
+    }
+    
     // Return data with default values if necessary
     return data || {
       monthly_fee: 50,
       weekly_fee: 20,
       monthly_goal: 800,
-      pix_qrcode: 'https://placeholder.com/qrcode'
+      pix_qrcode: 'https://placeholder.com/qrcode',
+      accumulated_balance: 0,
+      last_month_processed: new Date().toISOString().split('T')[0]
     };
   } catch (error) {
     console.error("Error in getFinanceSettings:", error);
@@ -194,8 +220,68 @@ export const getFinanceSettings = async (): Promise<FinanceSettings> => {
       monthly_fee: 50,
       weekly_fee: 20,
       monthly_goal: 800,
-      pix_qrcode: 'https://placeholder.com/qrcode'
+      pix_qrcode: 'https://placeholder.com/qrcode',
+      accumulated_balance: 0,
+      last_month_processed: new Date().toISOString().split('T')[0]
     };
+  }
+};
+
+// New function to process monthly financial accumulation
+const processMonthlyAccumulation = async (settings: FinanceSettings): Promise<void> => {
+  try {
+    console.log("Processing monthly accumulation...");
+    
+    // Get the first day of the current month
+    const currentDate = new Date();
+    const firstDayCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    
+    // Get the first day of the previous month
+    const firstDayPreviousMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    
+    // Format dates for query
+    const startDate = firstDayPreviousMonth.toISOString();
+    const endDate = firstDayCurrentMonth.toISOString();
+    
+    // Get all approved payments from the previous month
+    const { data: payments, error: paymentsError } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('status', 'approved')
+      .gte('created_at', startDate)
+      .lt('created_at', endDate);
+      
+    if (paymentsError) {
+      console.error("Error fetching payments for monthly processing:", paymentsError);
+      throw paymentsError;
+    }
+    
+    // Calculate total from the previous month
+    const totalCollected = payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+    
+    // Calculate the difference between total collected and monthly goal
+    const monthlyDifference = totalCollected - settings.monthly_goal;
+    
+    // Add the difference to the accumulated balance
+    const newBalance = (settings.accumulated_balance || 0) + monthlyDifference;
+    
+    // Update the finance settings
+    const { error: updateError } = await supabase
+      .from('finance_settings')
+      .update({
+        accumulated_balance: newBalance,
+        last_month_processed: currentDate.toISOString().split('T')[0]
+      })
+      .eq('id', settings.id);
+      
+    if (updateError) {
+      console.error("Error updating finance settings with accumulated balance:", updateError);
+      throw updateError;
+    }
+    
+    console.log(`Monthly accumulation processed. New balance: ${newBalance}`);
+  } catch (error) {
+    console.error("Error in processMonthlyAccumulation:", error);
   }
 };
 
@@ -302,6 +388,79 @@ export const updatePaymentStatus = async (paymentId: string, status: 'pending' |
   } catch (error) {
     console.error("Error in updatePaymentStatus:", error);
     throw error;
+  }
+};
+
+// New function to create a withdrawal from the accumulated balance
+export const createWithdrawal = async (withdrawal: Omit<Withdrawal, 'id' | 'created_at'>): Promise<any> => {
+  try {
+    console.log("Creating withdrawal:", withdrawal);
+    
+    // Start a transaction
+    const { data: settings, error: settingsError } = await supabase
+      .from('finance_settings')
+      .select('accumulated_balance')
+      .single();
+      
+    if (settingsError) {
+      console.error("Error fetching current balance:", settingsError);
+      throw settingsError;
+    }
+    
+    if ((settings.accumulated_balance || 0) < withdrawal.amount) {
+      throw new Error("Insufficient balance for withdrawal");
+    }
+    
+    // Insert the withdrawal record
+    const { data: withdrawalData, error: withdrawalError } = await supabase
+      .from('withdrawals')
+      .insert(withdrawal);
+      
+    if (withdrawalError) {
+      console.error("Error creating withdrawal:", withdrawalError);
+      throw withdrawalError;
+    }
+    
+    // Update the accumulated balance
+    const { error: updateError } = await supabase
+      .from('finance_settings')
+      .update({
+        accumulated_balance: (settings.accumulated_balance || 0) - withdrawal.amount
+      })
+      .gt('accumulated_balance', withdrawal.amount - 0.01); // Ensure we have enough balance
+      
+    if (updateError) {
+      console.error("Error updating balance after withdrawal:", updateError);
+      throw updateError;
+    }
+    
+    console.log("Withdrawal created successfully");
+    return withdrawalData;
+  } catch (error) {
+    console.error("Error in createWithdrawal:", error);
+    throw error;
+  }
+};
+
+// New function to get all withdrawals
+export const getAllWithdrawals = async (): Promise<Withdrawal[]> => {
+  try {
+    console.log("Fetching all withdrawals...");
+    const { data, error } = await supabase
+      .from('withdrawals')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching all withdrawals:", error);
+      throw error;
+    }
+    
+    console.log("All withdrawals fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getAllWithdrawals:", error);
+    return [];
   }
 };
 
