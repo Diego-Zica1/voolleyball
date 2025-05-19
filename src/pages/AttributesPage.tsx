@@ -79,21 +79,36 @@ export default function AttributesPage() {
   };
 
   const saveAttributes = async () => {
-    if (!selectedPlayer || !user?.isAdmin) return;
+    if (!selectedPlayer) return;
+    
+    // Only admins can save attribute changes
+    if (!user?.isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem salvar alterações nos atributos",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setIsSaving(true);
       await updatePlayerAttributes(selectedPlayer.id, selectedPlayer.attributes);
       
+      // Update players list with the new attributes and recalculated average
+      const updatedPlayers = await getAllPlayers();
+      setPlayers(updatedPlayers);
+      
+      // Update selected player with the latest data
+      const updatedSelectedPlayer = updatedPlayers.find(p => p.id === selectedPlayer.id);
+      if (updatedSelectedPlayer) {
+        setSelectedPlayer(updatedSelectedPlayer);
+      }
+      
       toast({
         title: "Atributos atualizados",
         description: "Os atributos foram salvos com sucesso",
       });
-      
-      // Update players list with the new attributes
-      setPlayers(players.map(p => 
-        p.id === selectedPlayer.id ? selectedPlayer : p
-      ));
     } catch (error) {
       console.error("Error saving attributes:", error);
       toast({

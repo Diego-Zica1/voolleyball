@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
 
@@ -121,18 +122,27 @@ export const getPlayerAttributes = async (userId: string): Promise<Player | null
 export const updatePlayerAttributes = async (playerId: string, attributes: PlayerAttributes): Promise<any> => {
   try {
     console.log("Updating player attributes:", playerId, attributes);
-    // Convert PlayerAttributes to JSON compatible object
+    
+    // Calculate the average rating from all attributes
+    const attributeValues = Object.values(attributes).map(Number);
+    const averageRating = attributeValues.reduce((a, b) => a + b, 0) / attributeValues.length;
+    
+    // Update both attributes and the average_rating
     const { data, error } = await supabase
       .from('players')
-      .update({ attributes: attributes as any })
-      .eq('id', playerId);
+      .update({ 
+        attributes: attributes,
+        average_rating: averageRating
+      })
+      .eq('id', playerId)
+      .select();
       
     if (error) {
       console.error("Error updating player attributes:", error);
       throw error;
     }
     
-    console.log("Player attributes updated successfully");
+    console.log("Player attributes updated successfully:", data);
     return data;
   } catch (error) {
     console.error("Error in updatePlayerAttributes:", error);
