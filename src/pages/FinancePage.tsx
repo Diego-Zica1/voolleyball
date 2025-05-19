@@ -9,7 +9,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { getFinanceSettings, addPayment, getAllPayments } from "@/lib/supabase";
 import { FinanceSettings, Payment } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet } from "lucide-react";
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -123,12 +122,8 @@ export default function FinancePage() {
   }
 
   const calculateTotalCollected = () => {
-    // Get the first day of the current month
-    const currentDate = new Date();
-    const firstDayCurrentMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    
     return payments
-      .filter(p => p.status === "approved" && new Date(p.created_at) >= firstDayCurrentMonth)
+      .filter(p => p.status === "approved")
       .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
@@ -161,7 +156,7 @@ export default function FinancePage() {
 
       {activeTab === "overview" ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Arrecadado</h3>
               <p className="text-3xl font-bold text-green-500">
@@ -194,19 +189,6 @@ export default function FinancePage() {
                   Faltam R$ {(settings.monthly_goal - calculateTotalCollected()).toFixed(2)}
                 </p>
               )}
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Saldo em Caixa</h3>
-              <div className="flex items-center">
-                <Wallet className="text-blue-500 mr-2" />
-                <p className="text-3xl font-bold text-blue-500">
-                  R$ {settings?.accumulated_balance?.toFixed(2) || '0.00'}
-                </p>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Saldo acumulado de todos os meses
-              </p>
             </div>
           </div>
 

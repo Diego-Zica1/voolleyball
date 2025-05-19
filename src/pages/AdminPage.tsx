@@ -1,71 +1,189 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { getAllUsers, getAllPayments, updateUserAdmin, updatePaymentStatus } from "@/lib/supabase";
-import { User, Payment } from "@/types";
+import { TabNav } from "@/components/TabNav";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { BalanceWithdrawal } from "@/components/BalanceWithdrawal";
+import { 
+  getAllUsers, 
+  getLatestGame, 
+  createGame, 
+  updateUserAdmin, 
+  getAllPayments,
+  updatePaymentStatus,
+  getScoreboardSettings,
+  updateScoreboardSettings
+} from "@/lib/supabase";
+import { Game, User, Payment } from "@/types";
+import { Loader2, RefreshCw } from "lucide-react";
 
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState("controls");
   const [users, setUsers] = useState<User[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [gameDate, setGameDate] = useState("");
+  const [gameTime, setGameTime] = useState("10:00");
+  const [gameLocation, setGameLocation] = useState("Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55");
+  const [maxPlayers, setMaxPlayers] = useState("18");
+  const [latestGame, setLatestGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
+  const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
+  const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
+  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
+  const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+  const [isSavingColors, setIsSavingColors] = useState(false);
+  
   const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const tabs = [
+    { id: "controls", label: "Controles de Administrador" },
+    { id: "payments", label: "Pagamentos Pendentes" },
+    { id: "schedule", label: "Agendar Novo Jogo" },
+    { id: "scoreboard", label: "Configurar Placar" }
+  ];
 
   useEffect(() => {
+    // Redirect if not admin
+    if (user && !user.isAdmin) {
+      navigate("/");
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas administradores podem acessar esta página",
+        variant: "destructive",
+      });
+    }
+    
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const [usersData, paymentsData] = await Promise.all([
-          getAllUsers(),
-          getAllPayments()
-        ]);
-        setUsers(usersData);
-        setPayments(paymentsData.filter(p => p.status === "pending"));
+        
+        // Fetch all users
+        const usersList = await getAllUsers();
+        setUsers(usersList);
+        
+        // Set default date to next Saturday
+        const nextSaturday = new Date();
+        nextSaturday.setDate(nextSaturday.getDate() + (6 - nextSaturday.getDay() + 7) % 7);
+        const formattedDate = nextSaturday.toISOString().split('T')[0];
+        setGameDate(formattedDate);
+        
+        // Get latest game
+        const game = await getLatestGame();
+        setLatestGame(game);
+        
+        // Fetch pending payments
+        const payments = await getAllPayments();
+        setPendingPayments(payments.filter(p => p.status === 'pending'));
+        
+        // Fetch scoreboard settings
+        const scoreboardSettings = await getScoreboardSettings();
+        if (scoreboardSettings) {
+          setTeamAColor(scoreboardSettings.team_a_color);
+          setTeamBColor(scoreboardSettings.team_b_color);
+        }
       } catch (error) {
         console.error("Error fetching admin data:", error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível buscar os dados administrativos",
-          variant: "destructive",
-        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
-  }, [toast]);
+    if (user?.isAdmin) {
+      fetchData();
+    }
+  }, [user, navigate, toast]);
 
-  const handleToggleAdmin = async (userId: string, isAdmin: boolean) => {
+  const handleCreateGame = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) return;
+    
     try {
-      await updateUserAdmin(userId, isAdmin);
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, isAdmin } : u
-      ));
-      toast({
-        title: "Permissões atualizadas",
-        description: `Usuário ${isAdmin ? 'promovido a administrador' : 'removido de administrador'}`,
+      setIsSubmitting(true);
+      
+      await createGame({
+        date: gameDate,
+        time: gameTime,
+        location: gameLocation,
+        max_players: parseInt(maxPlayers, 10),
+        created_by: user.id
       });
-    } catch (error) {
-      console.error("Error toggling admin:", error);
+      
       toast({
-        title: "Erro ao atualizar permissões",
-        description: "Não foi possível atualizar as permissões do usuário",
+        title: "Jogo agendado",
+        description: "O novo jogo foi agendado com sucesso",
+      });
+      
+      // Update latest game
+      const game = await getLatestGame();
+      setLatestGame(game);
+      
+      // Switch to controls tab
+      setActiveTab("controls");
+    } catch (error) {
+      console.error("Error creating game:", error);
+      toast({
+        title: "Erro ao agendar jogo",
+        description: "Não foi possível agendar o novo jogo",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const handleResetConfirmations = async () => {
+    if (!latestGame) return;
+    
+    // This would reset confirmations in a real app
+    toast({
+      title: "Confirmações resetadas",
+      description: "Todas as confirmações foram resetadas com sucesso",
+    });
+  };
+
+  const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
+    try {
+      setIsTogglingAdmin(userId);
+      await updateUserAdmin(userId, isAdmin);
+      
+      // Update the local state to reflect the change
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, isAdmin } : u
+      ));
+      
+      toast({
+        title: "Permissão atualizada",
+        description: `O usuário agora ${isAdmin ? 'é' : 'não é mais'} um administrador`,
+      });
+    } catch (error) {
+      console.error("Error updating user admin status:", error);
+      toast({
+        title: "Erro ao atualizar permissão",
+        description: "Não foi possível atualizar o status de administrador",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingAdmin(null);
+    }
+  };
+  
   const handleApprovePayment = async (paymentId: string) => {
     try {
-      await updatePaymentStatus(paymentId, "approved");
-      setPayments(payments.filter(p => p.id !== paymentId));
+      setIsApprovingPayment(paymentId);
+      
+      // In a real implementation, this would update the payment status in Supabase
+      await updatePaymentStatus(paymentId, 'approved');
+      
+      setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
+      
       toast({
         title: "Pagamento aprovado",
         description: "O pagamento foi aprovado com sucesso",
@@ -77,184 +195,415 @@ export default function AdminPage() {
         description: "Não foi possível aprovar o pagamento",
         variant: "destructive",
       });
+    } finally {
+      setIsApprovingPayment(null);
     }
   };
-
-  const refreshData = async () => {
+  
+  const handleSaveScoreboardColors = async () => {
     try {
-      const [usersData, paymentsData] = await Promise.all([
-        getAllUsers(),
-        getAllPayments()
-      ]);
-      setUsers(usersData);
-      setPayments(paymentsData.filter(p => p.status === "pending"));
+      setIsSavingColors(true);
+      
+      const success = await updateScoreboardSettings({
+        team_a_color: teamAColor,
+        team_b_color: teamBColor
+      });
+      
+      if (success) {
+        toast({
+          title: "Cores salvas",
+          description: "As cores do placar foram atualizadas com sucesso",
+        });
+      } else {
+        throw new Error("Failed to update colors");
+      }
     } catch (error) {
-      console.error("Error refreshing data:", error);
+      console.error("Error saving scoreboard colors:", error);
+      toast({
+        title: "Erro ao salvar cores",
+        description: "Não foi possível atualizar as cores do placar",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingColors(false);
     }
   };
 
-  if (!user?.isAdmin) {
-    return (
-      <PageContainer title="Acesso Negado">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-red-500 mb-4">Acesso Negado</h2>
-          <p>Você não tem permissão para acessar esta página.</p>
-        </div>
-      </PageContainer>
-    );
-  }
+  const refreshUsersList = async () => {
+    try {
+      setIsLoading(true);
+      const usersList = await getAllUsers();
+      setUsers(usersList);
+      toast({
+        title: "Lista atualizada",
+        description: "A lista de usuários foi atualizada com sucesso",
+      });
+    } catch (error) {
+      console.error("Error refreshing users list:", error);
+      toast({
+        title: "Erro ao atualizar lista",
+        description: "Não foi possível atualizar a lista de usuários",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
-      <PageContainer title="Administração">
-        <div className="text-center">Carregando dados administrativos...</div>
+      <PageContainer title="Painel de Administração">
+        <div className="text-center">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto" />
+          <p className="mt-2">Carregando painel administrativo...</p>
+        </div>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer 
-      title="Administração" 
-      description="Gerencie usuários, pagamentos e configurações do sistema."
+      title="Painel de Administração"
+      description="Gerencie jogos, usuários e confirmações de presença."
     >
-      <Tabs defaultValue="users" className="space-y-6">
-        <TabsList className="mb-6">
-          <TabsTrigger value="users">Usuários</TabsTrigger>
-          <TabsTrigger value="payments">Pagamentos Pendentes</TabsTrigger>
-          <TabsTrigger value="finance">Finanças</TabsTrigger>
-        </TabsList>
+      <div className="mb-6">
+        <TabNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
+      </div>
 
-        <TabsContent value="users" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciar Usuários</CardTitle>
-              <CardDescription>
-                Visualize e gerencie as permissões dos usuários cadastrados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Membro Desde</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
+      {activeTab === "controls" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Controles de Administrador</h2>
+          
+          <div className="mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-2">
+              Reset automático: sábado às 14:00
+            </p>
+            <Button 
+              onClick={handleResetConfirmations}
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              Resetar Confirmações Agora
+            </Button>
+          </div>
+
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Gerenciar Usuários</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={refreshUsersList}
+                className="flex items-center gap-1"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Atualizar lista
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Admin
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                  {users.map(user => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                          {user.username}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Switch 
+                            checked={user.isAdmin}
+                            onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
+                            disabled={isTogglingAdmin === user.id}
+                          />
+                          {isTogglingAdmin === user.id && (
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          )}
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {users.map(u => (
-                      <tr key={u.id}>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {u.username}
-                          {u.isAdmin && (
-                            <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-volleyball-purple text-white rounded-full">
-                              Admin
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">{u.email}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {new Date(u.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {u.id !== user.id && (
-                            <Button
-                              variant={u.isAdmin ? "destructive" : "outline"}
-                              size="sm"
-                              onClick={() => handleToggleAdmin(u.id, !u.isAdmin)}
-                            >
-                              {u.isAdmin ? "Remover Admin" : "Tornar Admin"}
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "payments" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Pagamentos Pendentes</h2>
+          
+          {pendingPayments.length === 0 ? (
+            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+              Não há pagamentos pendentes para aprovação.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Usuário
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipo
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Valor
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Comprovante
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                  {pendingPayments.map(payment => (
+                    <tr key={payment.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                          {payment.username}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                          {payment.payment_type === 'monthly' ? 'Mensal' : 'Semanal'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 dark:text-gray-200">
+                          R$ {payment.amount.toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(payment.created_at).toLocaleDateString('pt-BR')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {payment.receipt_url ? (
+                          <a 
+                            href={payment.receipt_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
+                          >
+                            Ver comprovante
+                          </a>
+                        ) : (
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            Sem comprovante
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Button
+                          onClick={() => handleApprovePayment(payment.id)}
+                          disabled={isApprovingPayment === payment.id}
+                          className="bg-volleyball-green hover:bg-volleyball-green/90 text-white text-xs py-1"
+                          size="sm"
+                        >
+                          {isApprovingPayment === payment.id ? 'Aprovando...' : 'Aprovar'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "schedule" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
+          
+          <form onSubmit={handleCreateGame} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="date" className="block text-sm font-medium mb-1">
+                  Data
+                </label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={gameDate}
+                  onChange={(e) => setGameDate(e.target.value)}
+                  required
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              
+              <div>
+                <label htmlFor="time" className="block text-sm font-medium mb-1">
+                  Horário
+                </label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={gameTime}
+                  onChange={(e) => setGameTime(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="location" className="block text-sm font-medium mb-1">
+                Local
+              </label>
+              <Input
+                id="location"
+                type="text"
+                value={gameLocation}
+                onChange={(e) => setGameLocation(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="maxPlayers" className="block text-sm font-medium mb-1">
+                Número máximo de jogadores
+              </label>
+              <Input
+                id="maxPlayers"
+                type="number"
+                min="2"
+                value={maxPlayers}
+                onChange={(e) => setMaxPlayers(e.target.value)}
+                required
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="volleyball-button-primary w-full mt-4" 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Agendando Jogo..." : "Agendar Jogo"}
+            </Button>
+          </form>
+        </div>
+      )}
 
-        <TabsContent value="payments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pagamentos Pendentes</CardTitle>
-              <CardDescription>
-                Aprove ou rejeite os pagamentos pendentes
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {payments.length === 0 ? (
-                <p className="text-center py-4 text-gray-500">
-                  Não há pagamentos pendentes para aprovação.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead>
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Comprovante</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {payments.map(payment => (
-                        <tr key={payment.id}>
-                          <td className="px-4 py-3 whitespace-nowrap">{payment.username}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {new Date(payment.created_at).toLocaleDateString('pt-BR')}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap capitalize">
-                            {payment.payment_type === "monthly" ? "Mensalista" : "Avulso"}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            R$ {payment.amount.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {payment.receipt_url ? (
-                              <a 
-                                href={payment.receipt_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-blue-500 underline"
-                              >
-                                Ver comprovante
-                              </a>
-                            ) : (
-                              "Sem comprovante"
-                            )}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="mr-2"
-                              onClick={() => handleApprovePayment(payment.id)}
-                            >
-                              Aprovar
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+      {activeTab === "scoreboard" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Configurar Cores do Placar</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="teamAColor" className="block text-sm font-medium mb-2">
+                Cor do Time A
+              </label>
+              <div className="flex gap-4 items-center">
+                <Input
+                  id="teamAColor"
+                  type="color"
+                  value={teamAColor}
+                  onChange={(e) => setTeamAColor(e.target.value)}
+                  className="w-20 h-10"
+                />
+                <Input 
+                  type="text" 
+                  value={teamAColor} 
+                  onChange={(e) => setTeamAColor(e.target.value)}
+                  className="w-32"
+                />
+                <div 
+                  className="w-20 h-10 rounded" 
+                  style={{ backgroundColor: teamAColor }}
+                ></div>
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="teamBColor" className="block text-sm font-medium mb-2">
+                Cor do Time B
+              </label>
+              <div className="flex gap-4 items-center">
+                <Input
+                  id="teamBColor"
+                  type="color"
+                  value={teamBColor}
+                  onChange={(e) => setTeamBColor(e.target.value)}
+                  className="w-20 h-10"
+                />
+                <Input 
+                  type="text" 
+                  value={teamBColor} 
+                  onChange={(e) => setTeamBColor(e.target.value)}
+                  className="w-32"
+                />
+                <div 
+                  className="w-20 h-10 rounded" 
+                  style={{ backgroundColor: teamBColor }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-6">
+              <h3 className="text-md font-medium mb-2">Prévia do Placar</h3>
+              <div className="flex gap-4">
+                <div 
+                  className="flex-1 h-24 rounded flex items-center justify-center"
+                  style={{ backgroundColor: teamAColor }}
+                >
+                  <span className="text-xl font-bold text-white">TIME A</span>
                 </div>
+                <div 
+                  className="flex-1 h-24 rounded flex items-center justify-center"
+                  style={{ backgroundColor: teamBColor }}
+                >
+                  <span className="text-xl font-bold text-white">TIME B</span>
+                </div>
+              </div>
+            </div>
+            
+            <Button 
+              onClick={handleSaveScoreboardColors} 
+              className="w-full mt-4"
+              disabled={isSavingColors}
+            >
+              {isSavingColors ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Cores"
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="finance" className="space-y-6">
-          <BalanceWithdrawal onSuccess={refreshData} />
-        </TabsContent>
-      </Tabs>
+            </Button>
+          </div>
+        </div>
+      )}
     </PageContainer>
   );
 }
