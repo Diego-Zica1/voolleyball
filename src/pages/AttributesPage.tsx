@@ -81,7 +81,7 @@ export default function AttributesPage() {
   const saveAttributes = async () => {
     if (!selectedPlayer) return;
     
-    // Only admins can save attribute changes
+    // Only admins can save attribute changes for any player
     if (!user?.isAdmin) {
       toast({
         title: "Acesso negado",
