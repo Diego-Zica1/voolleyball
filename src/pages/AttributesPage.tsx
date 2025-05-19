@@ -93,6 +93,9 @@ export default function AttributesPage() {
 
     try {
       setIsSaving(true);
+      
+      // Ensure we're sending the full attributes object
+      console.log("Saving attributes for player:", selectedPlayer.id, selectedPlayer.attributes);
       await updatePlayerAttributes(selectedPlayer.id, selectedPlayer.attributes);
       
       // Update players list with the new attributes and recalculated average

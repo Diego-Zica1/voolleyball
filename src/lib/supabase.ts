@@ -127,6 +127,8 @@ export const updatePlayerAttributes = async (playerId: string, attributes: Playe
     const attributeValues = Object.values(attributes).map(Number);
     const averageRating = attributeValues.reduce((a, b) => a + b, 0) / attributeValues.length;
     
+    console.log("Calculated average rating:", averageRating);
+    
     // Update both attributes and the average_rating
     // Cast attributes to any to bypass the type checking since we know the structure is valid
     const { data, error } = await supabase

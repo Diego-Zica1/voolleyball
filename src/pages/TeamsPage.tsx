@@ -13,7 +13,7 @@ export default function TeamsPage() {
   const [confirmedPlayers, setConfirmedPlayers] = useState<Player[]>([]);
   const [game, setGame] = useState<Game | null>(null);
   const [numberOfTeams, setNumberOfTeams] = useState<number>(2);
-  const [balanceBySkill, setBalanceBySkill] = useState<boolean>(true);
+  const [balanceBySkill, setBalanceBySkill] = useState<boolean>(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSorting, setIsSorting] = useState(false);
