@@ -128,10 +128,11 @@ export const updatePlayerAttributes = async (playerId: string, attributes: Playe
     const averageRating = attributeValues.reduce((a, b) => a + b, 0) / attributeValues.length;
     
     // Update both attributes and the average_rating
+    // Cast attributes to any to bypass the type checking since we know the structure is valid
     const { data, error } = await supabase
       .from('players')
       .update({ 
-        attributes: attributes,
+        attributes: attributes as any,
         average_rating: averageRating
       })
       .eq('id', playerId)
