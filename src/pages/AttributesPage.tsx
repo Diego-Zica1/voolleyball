@@ -198,7 +198,7 @@ export default function AttributesPage() {
                     </div>
                     <Slider
                       id={attr}
-                      defaultValue={[value]}
+                      value={[value]}
                       max={10}
                       min={0}
                       step={1}
