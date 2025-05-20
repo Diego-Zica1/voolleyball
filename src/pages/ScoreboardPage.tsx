@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, TouchEvent } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { ScoreboardMenu } from "@/components/ScoreboardMenu";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,8 @@ export default function ScoreboardPage() {
   const [teamAFontColor, setTeamAFontColor] = useState("#FFFFFF");
   const [teamBFontColor, setTeamBFontColor] = useState("#FFFFFF");
   const [isSaving, setIsSaving] = useState(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchTeam, setTouchTeam] = useState<'A' | 'B' | null>(null);
   
   const { toast } = useToast();
 
@@ -85,10 +87,33 @@ export default function ScoreboardPage() {
     }
   };
 
-  // Função para detectar toques na tela em modo fullscreen
-  const handleTouchScore = (team: 'A' | 'B') => {
+  // Touch gesture handlers for fullscreen mode
+  const handleTouchStart = (team: 'A' | 'B', e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen) {
-      incrementScore(team);
+      setTouchTeam(team);
+      setTouchStartY(e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTouchStartY(null);
+    setTouchTeam(null);
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    if (isFullscreen && touchStartY !== null && touchTeam) {
+      const currentY = e.touches[0].clientY;
+      const diffY = touchStartY - currentY;
+      
+      // If swipe up (positive diff) increment score, if swipe down (negative diff) decrement score
+      // Using threshold to avoid accidental swipes
+      if (diffY > 50) {
+        incrementScore(touchTeam);
+        setTouchStartY(currentY); // Reset starting position
+      } else if (diffY < -50) {
+        decrementScore(touchTeam);
+        setTouchStartY(currentY); // Reset starting position
+      }
     }
   };
   
@@ -123,6 +148,54 @@ export default function ScoreboardPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // Render a preview of fullscreen scoreboard
+  const renderScoreboardPreview = () => {
+    return (
+      <div className="w-full mt-8 border rounded-lg overflow-hidden shadow-lg">
+        <h3 className="text-center py-2 bg-gray-100 dark:bg-gray-800 font-medium border-b">Preview do Placar</h3>
+        <div className="flex flex-col md:flex-row">
+          {/* Team A Preview */}
+          <div 
+            className="flex-1 p-4 flex flex-col items-center justify-center"
+            style={{ backgroundColor: teamAColor }}
+          >
+            <h2 
+              className="text-xl font-bold mb-2" 
+              style={{ color: teamAFontColor }}
+            >
+              {teamAName}
+            </h2>
+            <div 
+              className="text-5xl font-bold" 
+              style={{ color: teamAFontColor }}
+            >
+              {teamAScore}
+            </div>
+          </div>
+          
+          {/* Team B Preview */}
+          <div 
+            className="flex-1 p-4 flex flex-col items-center justify-center"
+            style={{ backgroundColor: teamBColor }}
+          >
+            <h2 
+              className="text-xl font-bold mb-2" 
+              style={{ color: teamBFontColor }}
+            >
+              {teamBName}
+            </h2>
+            <div 
+              className="text-5xl font-bold" 
+              style={{ color: teamBFontColor }}
+            >
+              {teamBScore}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -257,6 +330,9 @@ export default function ScoreboardPage() {
                 {isSaving ? "Salvando..." : "Salvar Configurações"}
               </Button>
             </div>
+            
+            {/* Scoreboard Preview */}
+            {renderScoreboardPreview()}
           </div>
         </PageContainer>
       )}
@@ -280,7 +356,9 @@ export default function ScoreboardPage() {
               style={{
                 background: isFullscreen ? teamAColor : ''
               }}
-              onClick={isFullscreen ? () => handleTouchScore('A') : undefined}
+              onTouchStart={(e) => handleTouchStart('A', e)}
+              onTouchEnd={handleTouchEnd}
+              onTouchMove={handleTouchMove}
             >
               <h2 className={`${
                 isFullscreen 
@@ -345,7 +423,9 @@ export default function ScoreboardPage() {
               style={{
                 background: isFullscreen ? teamBColor : ''
               }}
-              onClick={isFullscreen ? () => handleTouchScore('B') : undefined}
+              onTouchStart={(e) => handleTouchStart('B', e)}
+              onTouchEnd={handleTouchEnd}
+              onTouchMove={handleTouchMove}
             >
               <h2 className={`${
                 isFullscreen 
