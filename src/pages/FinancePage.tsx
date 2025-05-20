@@ -1,23 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { TabNav } from "@/components/TabNav";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/components/AuthProvider";
-import { 
-  getFinanceSettings, 
-  addPayment, 
-  getAllPayments,
-  calculateAndUpdateMonthlyBalance,
-  getCurrentCashBalance
-} from "@/lib/supabase";
+import { getFinanceSettings, addPayment, getAllPayments } from "@/lib/supabase";
 import { FinanceSettings, Payment } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUp, ArrowDown, DollarSign } from "lucide-react";
-import { format } from "date-fns";
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -25,7 +16,6 @@ export default function FinancePage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cashBalance, setCashBalance] = useState<number>(0);
   
   const [paymentType, setPaymentType] = useState<"monthly" | "weekly">("monthly");
   const [receiptUrl, setReceiptUrl] = useState("");
@@ -47,17 +37,6 @@ export default function FinancePage() {
         
         const allPayments = await getAllPayments();
         setPayments(allPayments);
-
-        // Check for monthly balance calculation (only on first of the month or when balance hasn't been calculated)
-        const today = new Date();
-        if (today.getDate() === 1) {
-          console.log("First day of the month, checking monthly balance calculation");
-          await calculateAndUpdateMonthlyBalance();
-        }
-
-        // Get current cash balance
-        const balance = await getCurrentCashBalance();
-        setCashBalance(balance);
       } catch (error) {
         console.error("Error fetching finance data:", error);
         toast({
@@ -177,7 +156,7 @@ export default function FinancePage() {
 
       {activeTab === "overview" ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Arrecadado</h3>
               <p className="text-3xl font-bold text-green-500">
@@ -210,23 +189,6 @@ export default function FinancePage() {
                   Faltam R$ {(settings.monthly_goal - calculateTotalCollected()).toFixed(2)}
                 </p>
               )}
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Dinheiro em Caixa</h3>
-              <div className="flex items-center">
-                <DollarSign className={`mr-2 ${cashBalance >= 0 ? 'text-green-500' : 'text-red-500'}`} />
-                <p className={`text-3xl font-bold ${cashBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  R$ {Math.abs(cashBalance).toFixed(2)}
-                </p>
-                {cashBalance >= 0 ? 
-                  <ArrowUp className="ml-2 text-green-500" /> : 
-                  <ArrowDown className="ml-2 text-red-500" />
-                }
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Saldo acumulado de todos os meses
-              </p>
             </div>
           </div>
 

@@ -9,33 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      cash_withdrawals: {
-        Row: {
-          amount: number
-          created_at: string
-          id: string
-          reason: string
-          user_id: string
-          username: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          id?: string
-          reason: string
-          user_id: string
-          username: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          id?: string
-          reason?: string
-          user_id?: string
-          username?: string
-        }
-        Relationships: []
-      }
       confirmations: {
         Row: {
           confirmed_at: string
@@ -136,33 +109,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      monthly_balance: {
-        Row: {
-          balance_amount: number
-          collected_amount: number
-          created_at: string
-          id: string
-          month: string
-          target_amount: number
-        }
-        Insert: {
-          balance_amount: number
-          collected_amount: number
-          created_at?: string
-          id?: string
-          month: string
-          target_amount: number
-        }
-        Update: {
-          balance_amount?: number
-          collected_amount?: number
-          created_at?: string
-          id?: string
-          month?: string
-          target_amount?: number
-        }
-        Relationships: []
       }
       payments: {
         Row: {
