@@ -32,7 +32,7 @@ export function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <VolleyballIcon className="h-8 w-8 text-volleyball-purple" />
+            <VolleyballIcon className="h-8 w-8 text-volleyball-cyan" />
             <h1 className="text-xl font-bold">Desafinados da Quadra</h1>
           </div>
 
@@ -44,7 +44,7 @@ export function Header() {
                 to={item.path}
                 className={`px-3 py-2 rounded-md transition-colors ${
                   isActive(item.path) 
-                    ? "bg-volleyball-purple text-white" 
+                    ? "bg-volleyball-cyan-800 text-white" 
                     : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 }`}
               >
@@ -82,7 +82,7 @@ export function Header() {
                   to={item.path}
                   className={`px-3 py-2 rounded-md ${
                     isActive(item.path) 
-                      ? "bg-volleyball-purple text-white" 
+                      ? "bg-volleyball-cyan-800 text-white" 
                       : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}

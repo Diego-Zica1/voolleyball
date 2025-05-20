@@ -66,7 +66,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-2" size={64} />
+          <VolleyballIcon className="h-16 w-16 text-volleyball-cyan mb-2" size={64} />
           <h1 className="text-2xl font-bold">Desafinados da Quadra</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {isLogin ? "Entre para gerenciar seus jogos de vôlei" : "Crie uma conta para participar"}
@@ -78,7 +78,7 @@ export default function LoginPage() {
             <button
               className={`flex-1 py-2 text-center ${
                 isLogin
-                  ? "border-b-2 border-volleyball-purple text-volleyball-purple"
+                  ? "border-b-2 border-volleyball-cyan text-volleyball-cyan"
                   : "text-gray-500 border-b border-gray-300"
               }`}
               onClick={() => setIsLogin(true)}
@@ -88,7 +88,7 @@ export default function LoginPage() {
             <button
               className={`flex-1 py-2 text-center ${
                 !isLogin
-                  ? "border-b-2 border-volleyball-purple text-volleyball-purple"
+                  ? "border-b-2 border-volleyball-cyan text-volleyball-cyan"
                   : "text-gray-500 border-b border-gray-300"
               }`}
               onClick={() => setIsLogin(false)}
@@ -147,7 +147,7 @@ export default function LoginPage() {
             
             <Button 
               type="submit" 
-              className="w-full bg-volleyball-purple hover:bg-volleyball-purple/90" 
+              className="w-full bg-volleyball-cyan hover:bg-volleyball-cyan/90" 
               disabled={isLoading}
             >
               {isLoading ? (

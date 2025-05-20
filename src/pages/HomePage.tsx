@@ -207,7 +207,7 @@ export default function HomePage() {
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">às {game.time}</p>
                 </div>
-                <div className="bg-volleyball-purple/10 text-volleyball-purple rounded-full px-3 py-1 text-sm">
+                <div className="bg-volleyball-cyan/10 text-volleyball-cyan rounded-full px-3 py-1 text-sm">
                   {getAvailableSpots()} vagas disponíveis
                 </div>
               </div>

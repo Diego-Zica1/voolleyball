@@ -414,7 +414,7 @@ export default function AdminPage() {
                             href={payment.receipt_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
+                            className="text-volleyball-cyan hover:text-volleyball-cyan-600 text-sm"
                           >
                             Ver comprovante
                           </a>
