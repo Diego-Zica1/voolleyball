@@ -3,9 +3,14 @@ import React, { useRef, useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { ScoreboardMenu } from "@/components/ScoreboardMenu";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { HexColorPicker } from "react-colorful";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Minus, RefreshCw } from "lucide-react";
 import { Header } from "@/components/Header";
-import { getScoreboardSettings } from "@/lib/supabase";
+import { getScoreboardSettings, updateScoreboardSettings } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
+import { ScoreboardSettings } from "@/types";
 
 export default function ScoreboardPage() {
   const scoreboardRef = useRef<HTMLDivElement>(null);
@@ -15,6 +20,13 @@ export default function ScoreboardPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
   const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+  const [teamAName, setTeamAName] = useState("TIME A");
+  const [teamBName, setTeamBName] = useState("TIME B");
+  const [teamAFontColor, setTeamAFontColor] = useState("#FFFFFF");
+  const [teamBFontColor, setTeamBFontColor] = useState("#FFFFFF");
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const { toast } = useToast();
 
   useEffect(() => {
     // Get fullscreen state
@@ -30,6 +42,11 @@ export default function ScoreboardPage() {
       if (settings) {
         setTeamAColor(settings.team_a_color);
         setTeamBColor(settings.team_b_color);
+        
+        if (settings.team_a_name) setTeamAName(settings.team_a_name);
+        if (settings.team_b_name) setTeamBName(settings.team_b_name);
+        if (settings.team_a_font_color) setTeamAFontColor(settings.team_a_font_color);
+        if (settings.team_b_font_color) setTeamBFontColor(settings.team_b_font_color);
       }
     };
     
@@ -74,6 +91,39 @@ export default function ScoreboardPage() {
       incrementScore(team);
     }
   };
+  
+  const saveSettings = async () => {
+    try {
+      setIsSaving(true);
+      
+      const settings: Partial<ScoreboardSettings> = {
+        team_a_color: teamAColor,
+        team_b_color: teamBColor,
+        team_a_name: teamAName,
+        team_b_name: teamBName,
+        team_a_font_color: teamAFontColor,
+        team_b_font_color: teamBFontColor
+      };
+      
+      const success = await updateScoreboardSettings(settings);
+      
+      if (success) {
+        toast({
+          title: "Configurações salvas",
+          description: "As configurações do placar foram salvas com sucesso",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as configurações",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
@@ -83,10 +133,130 @@ export default function ScoreboardPage() {
       {/* Menu de controles (visível apenas quando não estiver em fullscreen ou quando showControls for true) */}
       {showControls && !isFullscreen && (
         <PageContainer title="Placar">
-          <div className="text-center">
+          <div className="text-center mb-6">
             <p className="mt-4 text-muted-foreground">
               Configure o placar conforme necessário. Clique no botão de tela cheia para exibir somente o placar.
             </p>
+          </div>
+          
+          {/* Configurações do placar */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow mb-8">
+            <h2 className="text-xl font-semibold mb-4">Configurar Placar</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Configurações Time A */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Time A</h3>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome do Time</label>
+                  <Input
+                    value={teamAName}
+                    onChange={(e) => setTeamAName(e.target.value)}
+                    placeholder="TIME A"
+                    maxLength={20}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cor do Fundo</label>
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <div 
+                            className="w-5 h-5 rounded-sm mr-2" 
+                            style={{ backgroundColor: teamAColor }}
+                          />
+                          <span>{teamAColor}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3">
+                        <HexColorPicker color={teamAColor} onChange={setTeamAColor} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cor da Fonte</label>
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <div 
+                            className="w-5 h-5 rounded-sm mr-2" 
+                            style={{ backgroundColor: teamAFontColor }}
+                          />
+                          <span>{teamAFontColor}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3">
+                        <HexColorPicker color={teamAFontColor} onChange={setTeamAFontColor} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Configurações Time B */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Time B</h3>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nome do Time</label>
+                  <Input
+                    value={teamBName}
+                    onChange={(e) => setTeamBName(e.target.value)}
+                    placeholder="TIME B"
+                    maxLength={20}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cor do Fundo</label>
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <div 
+                            className="w-5 h-5 rounded-sm mr-2" 
+                            style={{ backgroundColor: teamBColor }}
+                          />
+                          <span>{teamBColor}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3">
+                        <HexColorPicker color={teamBColor} onChange={setTeamBColor} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Cor da Fonte</label>
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <div 
+                            className="w-5 h-5 rounded-sm mr-2" 
+                            style={{ backgroundColor: teamBFontColor }}
+                          />
+                          <span>{teamBFontColor}</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3">
+                        <HexColorPicker color={teamBFontColor} onChange={setTeamBFontColor} />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 text-right">
+              <Button 
+                onClick={saveSettings}
+                disabled={isSaving}
+                className="volleyball-button-primary"
+              >
+                {isSaving ? "Salvando..." : "Salvar Configurações"}
+              </Button>
+            </div>
           </div>
         </PageContainer>
       )}
@@ -114,14 +284,25 @@ export default function ScoreboardPage() {
             >
               <h2 className={`${
                 isFullscreen 
-                  ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
                   : 'text-2xl md:text-4xl font-bold mb-6'
-              }`}>TIME A</h2>
-              <div className={`${
-                isFullscreen 
-                  ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-white text-center' 
-                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
-              }`}>
+              }`}
+              style={{
+                color: isFullscreen ? teamAFontColor : ''
+              }}
+              >
+                {teamAName}
+              </h2>
+              <div 
+                className={`${
+                  isFullscreen 
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                    : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
+                }`}
+                style={{
+                  color: isFullscreen ? teamAFontColor : ''
+                }}
+              >
                 {teamAScore}
               </div>
               
@@ -168,14 +349,25 @@ export default function ScoreboardPage() {
             >
               <h2 className={`${
                 isFullscreen 
-                  ? 'text-4xl md:text-6xl font-bold mb-6 text-white text-center' 
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
                   : 'text-2xl md:text-4xl font-bold mb-6'
-              }`}>TIME B</h2>
-              <div className={`${
-                isFullscreen 
-                  ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-white text-center' 
-                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
-              }`}>
+              }`}
+              style={{
+                color: isFullscreen ? teamBFontColor : ''
+              }}
+              >
+                {teamBName}
+              </h2>
+              <div 
+                className={`${
+                  isFullscreen 
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                    : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
+                }`}
+                style={{
+                  color: isFullscreen ? teamBFontColor : ''
+                }}
+              >
                 {teamBScore}
               </div>
               
@@ -211,7 +403,7 @@ export default function ScoreboardPage() {
         </div>
       </div>
 
-      {/* Menu flutuante apenas com botão de fullscreen */}
+      {/* Menu flutuante com botão de fullscreen */}
       <ScoreboardMenu 
         scoreboardRef={scoreboardRef}
       />

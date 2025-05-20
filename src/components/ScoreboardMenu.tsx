@@ -8,10 +8,10 @@ interface ScoreboardMenuProps {
 
 export function ScoreboardMenu({ scoreboardRef }: ScoreboardMenuProps) {
   return (
-    <div className="fixed top-0 right-0 z-50 p-4">
+    <div className="fixed bottom-8 left-0 right-0 z-50 flex justify-center">
       <FullscreenButton 
         targetRef={scoreboardRef} 
-        className="bg-black/30 hover:bg-black/50 text-white rounded-full"
+        className="bg-black/30 hover:bg-black/50 text-white rounded-full shadow-lg"
       />
     </div>
   );

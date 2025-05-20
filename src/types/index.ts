@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -72,4 +71,33 @@ export interface FinanceSettings {
 export interface ThemeOptions {
   mode: 'light' | 'dark';
   colorScheme: 'purple' | 'blue' | 'green' | 'orange';
+}
+
+export interface MonthlyBalance {
+  id: string;
+  month: string;
+  target_amount: number;
+  collected_amount: number;
+  balance_amount: number;
+  created_at: string;
+}
+
+export interface CashWithdrawal {
+  id: string;
+  amount: number;
+  reason: string;
+  created_at: string;
+  user_id: string;
+  username: string;
+}
+
+export interface ScoreboardSettings {
+  id?: string;
+  team_a_color: string;
+  team_b_color: string;
+  team_a_name?: string;
+  team_b_name?: string;
+  team_a_font_color?: string;
+  team_b_font_color?: string;
+  updated_at?: string;
 }

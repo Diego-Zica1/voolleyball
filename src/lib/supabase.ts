@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -404,7 +403,81 @@ export const getAllUsers = async (): Promise<User[]> => {
   }
 };
 
-export const getScoreboardSettings = async (): Promise<{ team_a_color: string, team_b_color: string } | null> => {
+export const getMonthlyBalance = async (): Promise<MonthlyBalance[]> => {
+  try {
+    console.log("Fetching monthly balance...");
+    const { data, error } = await supabase
+      .from('monthly_balance')
+      .select('*')
+      .order('month', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching monthly balance:", error);
+      throw error;
+    }
+    
+    console.log("Monthly balance fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getMonthlyBalance:", error);
+    return [];
+  }
+};
+
+export const getCurrentMonthBalance = async (): Promise<number> => {
+  try {
+    console.log("Calculating current month balance...");
+    const balances = await getMonthlyBalance();
+    
+    return balances.reduce((total, month) => total + month.balance_amount, 0);
+  } catch (error) {
+    console.error("Error in getCurrentMonthBalance:", error);
+    return 0;
+  }
+};
+
+export const addCashWithdrawal = async (withdrawal: Omit<CashWithdrawal, 'id' | 'created_at'>): Promise<any> => {
+  try {
+    console.log("Adding cash withdrawal:", withdrawal);
+    const { data, error } = await supabase
+      .from('cash_withdrawals')
+      .insert(withdrawal);
+      
+    if (error) {
+      console.error("Error adding cash withdrawal:", error);
+      throw error;
+    }
+    
+    console.log("Cash withdrawal added successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in addCashWithdrawal:", error);
+    throw error;
+  }
+};
+
+export const getCashWithdrawals = async (): Promise<CashWithdrawal[]> => {
+  try {
+    console.log("Fetching cash withdrawals...");
+    const { data, error } = await supabase
+      .from('cash_withdrawals')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching cash withdrawals:", error);
+      throw error;
+    }
+    
+    console.log("Cash withdrawals fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getCashWithdrawals:", error);
+    return [];
+  }
+};
+
+export const getScoreboardSettings = async (): Promise<ScoreboardSettings | null> => {
   try {
     console.log("Fetching scoreboard settings...");
     const { data, error } = await supabase
@@ -425,7 +498,7 @@ export const getScoreboardSettings = async (): Promise<{ team_a_color: string, t
   }
 };
 
-export const updateScoreboardSettings = async (settings: { team_a_color: string, team_b_color: string }): Promise<boolean> => {
+export const updateScoreboardSettings = async (settings: Partial<ScoreboardSettings>): Promise<boolean> => {
   try {
     console.log("Updating scoreboard settings:", settings);
     const { data: existingSettings } = await supabase
@@ -439,7 +512,10 @@ export const updateScoreboardSettings = async (settings: { team_a_color: string,
       // Update existing settings
       const { error: updateError } = await supabase
         .from('scoreboard_settings')
-        .update(settings)
+        .update({
+          ...settings,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', existingSettings[0].id);
       
       error = updateError;
@@ -447,7 +523,11 @@ export const updateScoreboardSettings = async (settings: { team_a_color: string,
       // Insert new settings
       const { error: insertError } = await supabase
         .from('scoreboard_settings')
-        .insert(settings);
+        .insert({
+          ...settings,
+          team_a_color: settings.team_a_color || '#8B5CF6',
+          team_b_color: settings.team_b_color || '#10B981'
+        });
       
       error = insertError;
     }

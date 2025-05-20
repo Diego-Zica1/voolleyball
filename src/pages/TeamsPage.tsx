@@ -6,11 +6,18 @@ import { Player, Team, Game, Confirmation } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { X, Plus, User } from "lucide-react";
 
 export default function TeamsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [confirmedPlayers, setConfirmedPlayers] = useState<Player[]>([]);
+  const [unconfirmedPlayers, setUnconfirmedPlayers] = useState<Player[]>([]);
+  const [playerPool, setPlayerPool] = useState<Player[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [absentPlayers, setAbsentPlayers] = useState<string[]>([]);
+  
   const [game, setGame] = useState<Game | null>(null);
   const [numberOfTeams, setNumberOfTeams] = useState<number>(2);
   const [balanceBySkill, setBalanceBySkill] = useState<boolean>(false);
@@ -42,7 +49,14 @@ export default function TeamsPage() {
             confirmations.some(conf => conf.user_id === player.user_id)
           );
           
+          // Filter players who are not confirmed
+          const unconfirmedPlayersList = allPlayers.filter(player => 
+            !confirmations.some(conf => conf.user_id === player.user_id)
+          );
+          
           setConfirmedPlayers(confirmedPlayersList);
+          setUnconfirmedPlayers(unconfirmedPlayersList);
+          setPlayerPool(confirmedPlayersList); // Initialize player pool with confirmed players
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -66,11 +80,52 @@ export default function TeamsPage() {
     }
   };
 
+  const addPlayerToPool = () => {
+    if (!selectedPlayer) return;
+    
+    const playerToAdd = unconfirmedPlayers.find(p => p.id === selectedPlayer);
+    if (playerToAdd) {
+      setPlayerPool(prev => [...prev, playerToAdd]);
+      toast({
+        title: "Jogador adicionado",
+        description: `${playerToAdd.username} foi adicionado ao sorteio.`
+      });
+      setSelectedPlayer("");
+    }
+  };
+  
+  const removePlayerFromPool = (playerId: string) => {
+    const playerToRemove = confirmedPlayers.find(p => p.id === playerId);
+    if (playerToRemove) {
+      if (absentPlayers.includes(playerId)) {
+        setAbsentPlayers(prev => prev.filter(id => id !== playerId));
+      } else {
+        setAbsentPlayers(prev => [...prev, playerId]);
+      }
+    }
+  };
+  
+  // Get the final list of players for the draw
+  const getPlayersForDraw = () => {
+    const presentConfirmedPlayers = confirmedPlayers.filter(
+      player => !absentPlayers.includes(player.id)
+    );
+    
+    // Add unconfirmed players that were manually added
+    const addedUnconfirmedPlayers = unconfirmedPlayers.filter(
+      player => playerPool.some(p => p.id === player.id)
+    );
+    
+    return [...presentConfirmedPlayers, ...addedUnconfirmedPlayers];
+  };
+
   const sortTeams = () => {
-    if (confirmedPlayers.length === 0) {
+    const playersForDraw = getPlayersForDraw();
+    
+    if (playersForDraw.length === 0) {
       toast({
         title: "Sem jogadores",
-        description: "Não há jogadores confirmados para sortear times",
+        description: "Não há jogadores disponíveis para sortear times",
         variant: "destructive",
       });
       return;
@@ -79,7 +134,7 @@ export default function TeamsPage() {
     setIsSorting(true);
 
     try {
-      let playersCopy = [...confirmedPlayers];
+      let playersCopy = [...playersForDraw];
       const generatedTeams: Team[] = [];
 
       // Create empty teams
@@ -188,21 +243,137 @@ export default function TeamsPage() {
                   Balancear por Habilidade
                 </label>
               </div>
+              
+              {/* Adicionar jogador não confirmado */}
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-md font-semibold mb-3">Adicionar jogador não confirmado</h3>
+                <div className="flex space-x-2">
+                  <Select 
+                    value={selectedPlayer}
+                    onValueChange={setSelectedPlayer}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecionar jogador" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {unconfirmedPlayers.map(player => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.username} ({player.average_rating.toFixed(1)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm"
+                    onClick={addPlayerToPool}
+                    disabled={!selectedPlayer}
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Incluir
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Jogadores ausentes */}
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-md font-semibold mb-3">Jogadores confirmados ausentes</h3>
+                {absentPlayers.length > 0 ? (
+                  <ul className="space-y-1">
+                    {absentPlayers.map(playerId => {
+                      const player = confirmedPlayers.find(p => p.id === playerId);
+                      return player ? (
+                        <li key={playerId} className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">
+                          <span>{player.username}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => removePlayerFromPool(playerId)}
+                          >
+                            <X size={14} />
+                          </Button>
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Todos os jogadores confirmados estão presentes
+                  </p>
+                )}
+              </div>
 
               <Button 
                 onClick={sortTeams}
-                disabled={isSorting || confirmedPlayers.length === 0}
+                disabled={isSorting || getPlayersForDraw().length === 0}
                 className="w-full mt-2 volleyball-button-primary"
               >
                 {isSorting ? "Sorteando Times..." : "Sortear Times"}
               </Button>
 
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                <p>Jogadores confirmados: {confirmedPlayers.length}</p>
-                <p>Jogadores por time: {confirmedPlayers.length > 0 ? Math.ceil(confirmedPlayers.length / numberOfTeams) : 0}</p>
+                <p>Jogadores disponíveis: {getPlayersForDraw().length}</p>
+                <p>Jogadores por time: {getPlayersForDraw().length > 0 ? Math.ceil(getPlayersForDraw().length / numberOfTeams) : 0}</p>
               </div>
             </div>
           </div>
+          
+          {/* Lista de jogadores confirmados */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+            <h2 className="text-xl font-semibold mb-4">Jogadores Confirmados</h2>
+            {confirmedPlayers.length > 0 ? (
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {confirmedPlayers.map(player => (
+                  <li key={player.id} className="py-2 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className={absentPlayers.includes(player.id) ? 'line-through text-gray-400' : ''}>
+                        {player.username} ({player.average_rating.toFixed(1)})
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePlayerFromPool(player.id)}
+                      className={absentPlayers.includes(player.id) ? "text-green-500" : "text-red-500"}
+                    >
+                      {absentPlayers.includes(player.id) ? "Incluir" : "Marcar Ausente"}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">
+                Nenhum jogador confirmado para este jogo
+              </p>
+            )}
+          </div>
+          
+          {/* Lista de jogadores não confirmados adicionados */}
+          {playerPool.some(p => !confirmedPlayers.some(cp => cp.id === p.id)) && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+              <h2 className="text-xl font-semibold mb-4">Jogadores Não Confirmados (Adicionados)</h2>
+              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {playerPool
+                  .filter(p => !confirmedPlayers.some(cp => cp.id === p.id))
+                  .map(player => (
+                    <li key={player.id} className="py-2 flex items-center justify-between">
+                      <div className="flex items-center">
+                        <User size={16} className="mr-2 text-blue-500" />
+                        <span>{player.username} ({player.average_rating.toFixed(1)})</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPlayerPool(prev => prev.filter(p => p.id !== player.id))}
+                        className="text-red-500"
+                      >
+                        Remover
+                      </Button>
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+          )}
         </div>
 
         {teams.map((team, index) => (
