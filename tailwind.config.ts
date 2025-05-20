@@ -108,6 +108,7 @@ export default {
 					'light-neutral': '#f5f5f5',
 					stone: '#78716c',
 					'light-stone': '#f5f5f4'
+>>>>>>> 1c2db95494411c3b8bcd131b6c438ae5fac2e95e
 				}
 			},
 			borderRadius: {
