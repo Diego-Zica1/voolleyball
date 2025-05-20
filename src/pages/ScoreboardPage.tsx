@@ -94,7 +94,7 @@ export default function ScoreboardPage() {
       {/* Placar principal (referenciado para o modo tela cheia) */}
       <div 
         ref={scoreboardRef}
-        className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-cyan/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
+        className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
       >
         <div className={`w-full h-full max-w-full mx-auto ${!showControls || isFullscreen ? 'p-0' : ''}`}>
           <div className={`flex flex-col md:flex-row justify-between ${
@@ -120,7 +120,7 @@ export default function ScoreboardPage() {
               <div className={`${
                 isFullscreen 
                   ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-white text-center' 
-                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-cyan'
+                  : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
               }`}>
                 {teamAScore}
               </div>
@@ -139,7 +139,7 @@ export default function ScoreboardPage() {
                   variant="default"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); incrementScore('A'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-cyan' : 'bg-volleyball-cyan hover:bg-volleyball-cyan/80'}`}
+                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-purple' : 'bg-volleyball-purple hover:bg-volleyball-purple/80'}`}
                 >
                   <Plus className="h-5 w-5" />
                 </Button>

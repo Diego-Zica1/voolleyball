@@ -284,7 +284,7 @@ export default function AdminPage() {
             </p>
             <Button 
               onClick={handleResetConfirmations}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
             >
               Resetar Confirmações Agora
             </Button>
@@ -414,7 +414,7 @@ export default function AdminPage() {
                             href={payment.receipt_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-volleyball-cyan hover:text-volleyball-cyan-600 text-sm"
+                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
                           >
                             Ver comprovante
                           </a>

@@ -195,7 +195,7 @@ export default function AttributesPage() {
                       <label htmlFor={attr} className="text-sm font-medium">
                         {attributeNames[attr as keyof typeof attributeNames]}
                       </label>
-                      <span className="text-volleyball-cyan font-semibold">
+                      <span className="text-volleyball-purple font-semibold">
                         {value}
                       </span>
                     </div>

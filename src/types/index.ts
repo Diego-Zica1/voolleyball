@@ -71,5 +71,5 @@ export interface FinanceSettings {
 
 export interface ThemeOptions {
   mode: 'light' | 'dark';
-  colorScheme: 'purple' | 'blue' | 'green' | 'orange' | 'cyan';
+  colorScheme: 'purple' | 'blue' | 'green' | 'orange';
 }

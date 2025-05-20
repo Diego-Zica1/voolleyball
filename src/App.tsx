@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-cyan"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
     </div>;
   }
   
@@ -44,7 +44,7 @@ const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-cyan"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
     </div>;
   }
   
