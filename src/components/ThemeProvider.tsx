@@ -14,7 +14,7 @@ type ThemeProviderState = {
 
 const initialTheme: ThemeOptions = {
   mode: 'dark', // Modificado para 'dark'
-  colorScheme: 'purple',
+  colorScheme: 'cyan',
 };
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);

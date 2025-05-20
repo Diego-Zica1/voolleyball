@@ -207,7 +207,7 @@ export default function HomePage() {
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">às {game.time}</p>
                 </div>
-                <div className="bg-volleyball-gray/90 text-volleyball-purple-800 rounded-full px-3 py-1 text-sm">
+                <div className="bg-volleyball-purple/10 text-volleyball-purple rounded-full px-3 py-1 text-sm">
                   {getAvailableSpots()} vagas disponíveis
                 </div>
               </div>
@@ -269,7 +269,7 @@ export default function HomePage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-orange-900/20"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
                         onClick={() => confirmation.user_id === user.id 
                           ? handleCancel() 
                           : handleCancelOther(confirmation.user_id)
