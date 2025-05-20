@@ -44,7 +44,7 @@ export function Header() {
                 to={item.path}
                 className={`px-3 py-2 rounded-md transition-colors ${
                   isActive(item.path) 
-                    ? "bg-volleyball-cyan-800 text-white" 
+                    ? "bg-volleyball-cyan text-white" 
                     : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 }`}
               >
@@ -82,7 +82,7 @@ export function Header() {
                   to={item.path}
                   className={`px-3 py-2 rounded-md ${
                     isActive(item.path) 
-                      ? "bg-volleyball-cyan-800 text-white" 
+                      ? "bg-volleyball-cyan text-white" 
                       : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
