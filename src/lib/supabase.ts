@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -462,5 +461,178 @@ export const updateScoreboardSettings = async (settings: { team_a_color: string,
   } catch (error) {
     console.error("Error in updateScoreboardSettings:", error);
     return false;
+  }
+};
+
+export const getMonthlyBalances = async (): Promise<MonthlyBalance[]> => {
+  try {
+    console.log("Fetching monthly balances...");
+    const { data, error } = await supabase
+      .from('monthly_balance')
+      .select('*')
+      .order('month', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching monthly balances:", error);
+      throw error;
+    }
+    
+    console.log("Monthly balances fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getMonthlyBalances:", error);
+    return [];
+  }
+};
+
+export const calculateAndUpdateMonthlyBalance = async (): Promise<boolean> => {
+  try {
+    const currentDate = new Date();
+    const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    const prevMonthFormatted = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`;
+    
+    console.log("Calculating balance for previous month:", prevMonthFormatted);
+    
+    // Check if we already calculated for this month
+    const { data: existingBalance } = await supabase
+      .from('monthly_balance')
+      .select('*')
+      .eq('month', prevMonthFormatted)
+      .maybeSingle();
+    
+    if (existingBalance) {
+      console.log("Balance for this month already exists:", existingBalance);
+      return false;
+    }
+    
+    // Get finance settings for the target amount
+    const financeSettings = await getFinanceSettings();
+    
+    // Calculate total approved payments for previous month
+    const { data: payments, error: paymentsError } = await supabase
+      .from('payments')
+      .select('amount')
+      .eq('status', 'approved')
+      .gte('created_at', `${prevMonthFormatted}-01`)
+      .lt('created_at', `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-01`);
+    
+    if (paymentsError) {
+      console.error("Error fetching payments:", paymentsError);
+      throw paymentsError;
+    }
+    
+    const collectedAmount = payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+    const targetAmount = financeSettings.monthly_goal || 800;
+    const balanceAmount = collectedAmount - targetAmount;
+    
+    console.log(`Monthly balance calculation: collected ${collectedAmount}, target ${targetAmount}, balance ${balanceAmount}`);
+    
+    // Insert the new monthly balance record
+    const { error: insertError } = await supabase
+      .from('monthly_balance')
+      .insert({
+        month: prevMonthFormatted,
+        target_amount: targetAmount,
+        collected_amount: collectedAmount,
+        balance_amount: balanceAmount
+      });
+    
+    if (insertError) {
+      console.error("Error inserting monthly balance:", insertError);
+      throw insertError;
+    }
+    
+    console.log("Monthly balance successfully calculated and inserted");
+    return true;
+  } catch (error) {
+    console.error("Error in calculateAndUpdateMonthlyBalance:", error);
+    return false;
+  }
+};
+
+export const getCurrentCashBalance = async (): Promise<number> => {
+  try {
+    console.log("Calculating current cash balance...");
+    
+    // Get all monthly balances
+    const { data: monthlyBalances, error: balancesError } = await supabase
+      .from('monthly_balance')
+      .select('balance_amount');
+    
+    if (balancesError) {
+      console.error("Error fetching monthly balances:", balancesError);
+      throw balancesError;
+    }
+    
+    // Get all withdrawals
+    const { data: withdrawals, error: withdrawalsError } = await supabase
+      .from('cash_withdrawals')
+      .select('amount');
+    
+    if (withdrawalsError) {
+      console.error("Error fetching withdrawals:", withdrawalsError);
+      throw withdrawalsError;
+    }
+    
+    // Sum up all monthly balances
+    const totalMonthlyBalance = monthlyBalances?.reduce((sum, balance) => sum + balance.balance_amount, 0) || 0;
+    
+    // Sum up all withdrawals
+    const totalWithdrawals = withdrawals?.reduce((sum, withdrawal) => sum + withdrawal.amount, 0) || 0;
+    
+    // Calculate current balance
+    const currentBalance = totalMonthlyBalance - totalWithdrawals;
+    
+    console.log(`Current cash balance: ${currentBalance} (total balances: ${totalMonthlyBalance}, total withdrawals: ${totalWithdrawals})`);
+    return currentBalance;
+  } catch (error) {
+    console.error("Error in getCurrentCashBalance:", error);
+    return 0;
+  }
+};
+
+export const getCashWithdrawals = async (): Promise<CashWithdrawal[]> => {
+  try {
+    console.log("Fetching cash withdrawals...");
+    const { data, error } = await supabase
+      .from('cash_withdrawals')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching cash withdrawals:", error);
+      throw error;
+    }
+    
+    console.log("Cash withdrawals fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getCashWithdrawals:", error);
+    return [];
+  }
+};
+
+export const addCashWithdrawal = async (amount: number, reason: string, userId: string, username: string): Promise<any> => {
+  try {
+    console.log("Adding cash withdrawal:", amount, reason, userId, username);
+    const { data, error } = await supabase
+      .from('cash_withdrawals')
+      .insert({
+        amount,
+        reason,
+        user_id: userId,
+        username
+      });
+      
+    if (error) {
+      console.error("Error adding cash withdrawal:", error);
+      throw error;
+    }
+    
+    console.log("Cash withdrawal added successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in addCashWithdrawal:", error);
+    throw error;
   }
 };

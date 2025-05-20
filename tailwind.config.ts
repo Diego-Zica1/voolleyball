@@ -69,7 +69,8 @@ export default {
 					green: '#4CAF50',
 					red: '#ea384c',
 					orange: '#FF9800',
-					gray: '#5a5a5a'
+					gray: '#5a5a5a',
+					blue: '#3B82F6'
 				}
 			},
 			borderRadius: {

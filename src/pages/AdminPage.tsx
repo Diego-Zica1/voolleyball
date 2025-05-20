@@ -1,188 +1,117 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
 import { TabNav } from "@/components/TabNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/components/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
 import { 
   getAllUsers, 
-  getLatestGame, 
-  createGame, 
+  getAllPayments, 
+  updatePaymentStatus, 
   updateUserAdmin, 
-  getAllPayments,
-  updatePaymentStatus,
   getScoreboardSettings,
-  updateScoreboardSettings
+  updateScoreboardSettings 
 } from "@/lib/supabase";
-import { Game, User, Payment } from "@/types";
-import { Loader2, RefreshCw } from "lucide-react";
+import { User, Payment } from "@/types";
+import { CashWithdrawalForm } from "@/components/admin/CashWithdrawalForm";
+import { CashWithdrawalsList } from "@/components/admin/CashWithdrawalsList";
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState("controls");
+  const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState<User[]>([]);
-  const [gameDate, setGameDate] = useState("");
-  const [gameTime, setGameTime] = useState("10:00");
-  const [gameLocation, setGameLocation] = useState("Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55");
-  const [maxPlayers, setMaxPlayers] = useState("18");
-  const [latestGame, setLatestGame] = useState<Game | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
-  const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
-  const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
-  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
-  const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+
+  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Purple
+  const [teamBColor, setTeamBColor] = useState("#10B981"); // Green
   const [isSavingColors, setIsSavingColors] = useState(false);
   
+  // For cash withdrawals
+  const [refreshCashData, setRefreshCashData] = useState(0);
+
   const { user } = useAuth();
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const tabs = [
-    { id: "controls", label: "Controles de Administrador" },
-    { id: "payments", label: "Pagamentos Pendentes" },
-    { id: "schedule", label: "Agendar Novo Jogo" },
-    { id: "scoreboard", label: "Configurar Placar" }
+    { id: "users", label: "Usuários" },
+    { id: "payments", label: "Pagamentos" },
+    { id: "scoreboard", label: "Placar" },
+    { id: "cash", label: "Caixa" }
   ];
 
   useEffect(() => {
-    // Redirect if not admin
-    if (user && !user.isAdmin) {
-      navigate("/");
-      toast({
-        title: "Acesso restrito",
-        description: "Apenas administradores podem acessar esta página",
-        variant: "destructive",
-      });
-    }
-    
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Fetch all users
-        const usersList = await getAllUsers();
-        setUsers(usersList);
-        
-        // Set default date to next Saturday
-        const nextSaturday = new Date();
-        nextSaturday.setDate(nextSaturday.getDate() + (6 - nextSaturday.getDay() + 7) % 7);
-        const formattedDate = nextSaturday.toISOString().split('T')[0];
-        setGameDate(formattedDate);
-        
-        // Get latest game
-        const game = await getLatestGame();
-        setLatestGame(game);
-        
-        // Fetch pending payments
-        const payments = await getAllPayments();
-        setPendingPayments(payments.filter(p => p.status === 'pending'));
-        
-        // Fetch scoreboard settings
-        const scoreboardSettings = await getScoreboardSettings();
-        if (scoreboardSettings) {
-          setTeamAColor(scoreboardSettings.team_a_color);
-          setTeamBColor(scoreboardSettings.team_b_color);
+        if (activeTab === "users") {
+          const allUsers = await getAllUsers();
+          setUsers(allUsers);
+        } 
+        else if (activeTab === "payments") {
+          const allPayments = await getAllPayments();
+          setPayments(allPayments);
+        }
+        else if (activeTab === "scoreboard") {
+          const settings = await getScoreboardSettings();
+          if (settings) {
+            setTeamAColor(settings.team_a_color);
+            setTeamBColor(settings.team_b_color);
+          }
         }
       } catch (error) {
-        console.error("Error fetching admin data:", error);
+        console.error(`Error fetching ${activeTab} data:`, error);
+        toast({
+          title: "Erro ao carregar dados",
+          description: `Não foi possível buscar os dados de ${activeTab}`,
+          variant: "destructive",
+        });
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (user?.isAdmin) {
-      fetchData();
-    }
-  }, [user, navigate, toast]);
+    fetchData();
+  }, [activeTab, toast]);
 
-  const handleCreateGame = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) return;
-    
+  const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
     try {
-      setIsSubmitting(true);
+      await updateUserAdmin(userId, !isCurrentlyAdmin);
       
-      await createGame({
-        date: gameDate,
-        time: gameTime,
-        location: gameLocation,
-        max_players: parseInt(maxPlayers, 10),
-        created_by: user.id
-      });
-      
-      toast({
-        title: "Jogo agendado",
-        description: "O novo jogo foi agendado com sucesso",
-      });
-      
-      // Update latest game
-      const game = await getLatestGame();
-      setLatestGame(game);
-      
-      // Switch to controls tab
-      setActiveTab("controls");
-    } catch (error) {
-      console.error("Error creating game:", error);
-      toast({
-        title: "Erro ao agendar jogo",
-        description: "Não foi possível agendar o novo jogo",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleResetConfirmations = async () => {
-    if (!latestGame) return;
-    
-    // This would reset confirmations in a real app
-    toast({
-      title: "Confirmações resetadas",
-      description: "Todas as confirmações foram resetadas com sucesso",
-    });
-  };
-
-  const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
-    try {
-      setIsTogglingAdmin(userId);
-      await updateUserAdmin(userId, isAdmin);
-      
-      // Update the local state to reflect the change
-      setUsers(users.map(u => 
-        u.id === userId ? { ...u, isAdmin } : u
-      ));
+      // Update local state
+      setUsers(prevUsers => 
+        prevUsers.map(u => 
+          u.id === userId ? { ...u, isAdmin: !isCurrentlyAdmin } : u
+        )
+      );
       
       toast({
-        title: "Permissão atualizada",
-        description: `O usuário agora ${isAdmin ? 'é' : 'não é mais'} um administrador`,
+        title: "Status de administrador atualizado",
+        description: `O usuário foi ${!isCurrentlyAdmin ? "promovido a" : "removido de"} administrador`,
       });
     } catch (error) {
-      console.error("Error updating user admin status:", error);
+      console.error("Error updating admin status:", error);
       toast({
-        title: "Erro ao atualizar permissão",
+        title: "Erro",
         description: "Não foi possível atualizar o status de administrador",
         variant: "destructive",
       });
-    } finally {
-      setIsTogglingAdmin(null);
     }
   };
-  
+
   const handleApprovePayment = async (paymentId: string) => {
     try {
-      setIsApprovingPayment(paymentId);
+      await updatePaymentStatus(paymentId, "approved");
       
-      // In a real implementation, this would update the payment status in Supabase
-      await updatePaymentStatus(paymentId, 'approved');
-      
-      setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
+      // Update local state
+      setPayments(prevPayments => 
+        prevPayments.map(p => 
+          p.id === paymentId ? { ...p, status: "approved" } : p
+        )
+      );
       
       toast({
         title: "Pagamento aprovado",
@@ -191,37 +120,31 @@ export default function AdminPage() {
     } catch (error) {
       console.error("Error approving payment:", error);
       toast({
-        title: "Erro ao aprovar pagamento",
+        title: "Erro",
         description: "Não foi possível aprovar o pagamento",
         variant: "destructive",
       });
-    } finally {
-      setIsApprovingPayment(null);
     }
   };
-  
+
   const handleSaveScoreboardColors = async () => {
     try {
       setIsSavingColors(true);
       
-      const success = await updateScoreboardSettings({
+      await updateScoreboardSettings({
         team_a_color: teamAColor,
         team_b_color: teamBColor
       });
       
-      if (success) {
-        toast({
-          title: "Cores salvas",
-          description: "As cores do placar foram atualizadas com sucesso",
-        });
-      } else {
-        throw new Error("Failed to update colors");
-      }
+      toast({
+        title: "Cores salvas",
+        description: "As cores do placar foram atualizadas com sucesso",
+      });
     } catch (error) {
       console.error("Error saving scoreboard colors:", error);
       toast({
-        title: "Erro ao salvar cores",
-        description: "Não foi possível atualizar as cores do placar",
+        title: "Erro",
+        description: "Não foi possível salvar as cores do placar",
         variant: "destructive",
       });
     } finally {
@@ -229,42 +152,36 @@ export default function AdminPage() {
     }
   };
 
-  const refreshUsersList = async () => {
-    try {
-      setIsLoading(true);
-      const usersList = await getAllUsers();
-      setUsers(usersList);
-      toast({
-        title: "Lista atualizada",
-        description: "A lista de usuários foi atualizada com sucesso",
-      });
-    } catch (error) {
-      console.error("Error refreshing users list:", error);
-      toast({
-        title: "Erro ao atualizar lista",
-        description: "Não foi possível atualizar a lista de usuários",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCashWithdrawalComplete = () => {
+    // Trigger refresh of cash withdrawal data
+    setRefreshCashData(prev => prev + 1);
   };
+
+  if (!user?.isAdmin) {
+    return (
+      <PageContainer title="Acesso Restrito">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center">
+          <h2 className="text-xl font-semibold mb-4">Acesso Restrito</h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Esta área é restrita para administradores.
+          </p>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (isLoading) {
     return (
-      <PageContainer title="Painel de Administração">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto" />
-          <p className="mt-2">Carregando painel administrativo...</p>
-        </div>
+      <PageContainer title="Administração">
+        <div className="text-center">Carregando dados...</div>
       </PageContainer>
     );
   }
 
   return (
     <PageContainer 
-      title="Painel de Administração"
-      description="Gerencie jogos, usuários e confirmações de presença."
+      title="Administração"
+      description="Painel de controle para administradores."
     >
       <div className="mb-6">
         <TabNav
@@ -274,333 +191,208 @@ export default function AdminPage() {
         />
       </div>
 
-      {activeTab === "controls" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Controles de Administrador</h2>
-          
-          <div className="mb-6">
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Reset automático: sábado às 14:00
+      {activeTab === "users" && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Gerenciar Usuários</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Visualize e gerencie todos os usuários cadastrados.
             </p>
-            <Button 
-              onClick={handleResetConfirmations}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Resetar Confirmações Agora
-            </Button>
           </div>
 
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium">Gerenciar Usuários</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={refreshUsersList}
-                className="flex items-center gap-1"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Atualizar lista
-              </Button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Usuário
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Admin
-                    </th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nome de Usuário</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Admin</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {users.map(user => (
+                  <tr key={user.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.username}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.isAdmin 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-gray-100 text-gray-800"
+                      }`}>
+                        {user.isAdmin ? "Sim" : "Não"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                      >
+                        {user.isAdmin ? "Remover Admin" : "Tornar Admin"}
+                      </Button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                  {users.map(user => (
-                    <tr key={user.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                          {user.username}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {user.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Switch 
-                            checked={user.isAdmin}
-                            onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
-                            disabled={isTogglingAdmin === user.id}
-                          />
-                          {isTogglingAdmin === user.id && (
-                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {activeTab === "payments" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Pagamentos Pendentes</h2>
-          
-          {pendingPayments.length === 0 ? (
-            <p className="text-gray-600 dark:text-gray-400 text-center py-8">
-              Não há pagamentos pendentes para aprovação.
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Gerenciar Pagamentos</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Aprove ou rejeite pagamentos pendentes.
             </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Usuário
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Comprovante
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                  {pendingPayments.map(payment => (
-                    <tr key={payment.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                          {payment.username}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                          {payment.payment_type === 'monthly' ? 'Mensal' : 'Semanal'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-gray-200">
-                          R$ {payment.amount.toFixed(2)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(payment.created_at).toLocaleDateString('pt-BR')}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {payment.receipt_url ? (
-                          <a 
-                            href={payment.receipt_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
-                          >
-                            Ver comprovante
-                          </a>
-                        ) : (
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            Sem comprovante
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Button
-                          onClick={() => handleApprovePayment(payment.id)}
-                          disabled={isApprovingPayment === payment.id}
-                          className="bg-volleyball-green hover:bg-volleyball-green/90 text-white text-xs py-1"
-                          size="sm"
-                        >
-                          {isApprovingPayment === payment.id ? 'Aprovando...' : 'Aprovar'}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      {activeTab === "schedule" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
-          
-          <form onSubmit={handleCreateGame} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="date" className="block text-sm font-medium mb-1">
-                  Data
-                </label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={gameDate}
-                  onChange={(e) => setGameDate(e.target.value)}
-                  required
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="time" className="block text-sm font-medium mb-1">
-                  Horário
-                </label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={gameTime}
-                  onChange={(e) => setGameTime(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium mb-1">
-                Local
-              </label>
-              <Input
-                id="location"
-                type="text"
-                value={gameLocation}
-                onChange={(e) => setGameLocation(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="maxPlayers" className="block text-sm font-medium mb-1">
-                Número máximo de jogadores
-              </label>
-              <Input
-                id="maxPlayers"
-                type="number"
-                min="2"
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(e.target.value)}
-                required
-              />
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="volleyball-button-primary w-full mt-4" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Agendando Jogo..." : "Agendar Jogo"}
-            </Button>
-          </form>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Data</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Usuário</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Tipo</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Comprovante</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Ações</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {payments.map(payment => (
+                  <tr key={payment.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(payment.created_at).toLocaleDateString('pt-BR')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{payment.username}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                        {payment.payment_type === "monthly" ? "Mensalista" : "Avulso"}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        R$ {payment.amount.toFixed(2)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        payment.status === "approved" 
+                          ? "bg-green-100 text-green-800" 
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}>
+                        {payment.status === "approved" ? "Aprovado" : "Pendente"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {payment.receipt_url ? (
+                        <a 
+                          href={payment.receipt_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                          Ver comprovante
+                        </a>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">Sem comprovante</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {payment.status === "pending" && (
+                        <Button 
+                          variant="outline" 
+                          className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900"
+                          onClick={() => handleApprovePayment(payment.id)}
+                        >
+                          Aprovar
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
       {activeTab === "scoreboard" && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Configurar Cores do Placar</h2>
-          
-          <div className="space-y-6">
+          <h2 className="text-xl font-semibold mb-4">Configurações do Placar</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Personalize as cores dos times no placar.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="teamAColor" className="block text-sm font-medium mb-2">
                 Cor do Time A
               </label>
-              <div className="flex gap-4 items-center">
-                <Input
-                  id="teamAColor"
-                  type="color"
-                  value={teamAColor}
-                  onChange={(e) => setTeamAColor(e.target.value)}
-                  className="w-20 h-10"
-                />
-                <Input 
-                  type="text" 
-                  value={teamAColor} 
-                  onChange={(e) => setTeamAColor(e.target.value)}
-                  className="w-32"
-                />
+              <div className="flex items-center space-x-4">
                 <div 
-                  className="w-20 h-10 rounded" 
+                  className="w-10 h-10 rounded border"
                   style={{ backgroundColor: teamAColor }}
                 ></div>
+                <Input
+                  id="teamAColor"
+                  type="text"
+                  value={teamAColor}
+                  onChange={(e) => setTeamAColor(e.target.value)}
+                  placeholder="#000000"
+                />
               </div>
             </div>
-            
+
             <div>
               <label htmlFor="teamBColor" className="block text-sm font-medium mb-2">
                 Cor do Time B
               </label>
-              <div className="flex gap-4 items-center">
-                <Input
-                  id="teamBColor"
-                  type="color"
-                  value={teamBColor}
-                  onChange={(e) => setTeamBColor(e.target.value)}
-                  className="w-20 h-10"
-                />
-                <Input 
-                  type="text" 
-                  value={teamBColor} 
-                  onChange={(e) => setTeamBColor(e.target.value)}
-                  className="w-32"
-                />
+              <div className="flex items-center space-x-4">
                 <div 
-                  className="w-20 h-10 rounded" 
+                  className="w-10 h-10 rounded border"
                   style={{ backgroundColor: teamBColor }}
                 ></div>
+                <Input
+                  id="teamBColor"
+                  type="text"
+                  value={teamBColor}
+                  onChange={(e) => setTeamBColor(e.target.value)}
+                  placeholder="#000000"
+                />
               </div>
             </div>
-            
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-6">
-              <h3 className="text-md font-medium mb-2">Prévia do Placar</h3>
-              <div className="flex gap-4">
-                <div 
-                  className="flex-1 h-24 rounded flex items-center justify-center"
-                  style={{ backgroundColor: teamAColor }}
-                >
-                  <span className="text-xl font-bold text-white">TIME A</span>
-                </div>
-                <div 
-                  className="flex-1 h-24 rounded flex items-center justify-center"
-                  style={{ backgroundColor: teamBColor }}
-                >
-                  <span className="text-xl font-bold text-white">TIME B</span>
-                </div>
-              </div>
-            </div>
-            
+          </div>
+
+          <div className="mt-6">
             <Button 
               onClick={handleSaveScoreboardColors} 
-              className="w-full mt-4"
               disabled={isSavingColors}
             >
-              {isSavingColors ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                "Salvar Cores"
-              )}
+              {isSavingColors ? "Salvando..." : "Salvar Cores"}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "cash" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CashWithdrawalForm onWithdrawalComplete={handleCashWithdrawalComplete} />
+            <CashWithdrawalsList key={refreshCashData} />
           </div>
         </div>
       )}
