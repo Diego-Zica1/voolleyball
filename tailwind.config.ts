@@ -64,8 +64,8 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				volleyball: {
-					purple: '#9b87f5',
-					'light-purple': '#E5DEFF',
+					purple: '#876ff3',
+					'light-purple': '#af9ff7',
 					green: '#4CAF50',
 					red: '#ea384c',
 					orange: '#FF9800',
