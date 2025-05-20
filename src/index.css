@@ -26,7 +26,7 @@
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 22 90% 54%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
@@ -67,7 +67,7 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 22 90% 54%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
@@ -95,15 +95,15 @@
 }
 
 .bg-volleyball-primary {
-  @apply bg-volleyball-purple;
+  @apply bg-volleyball-cyan;
 }
 
 .volleyball-button-primary {
-  @apply bg-volleyball-purple hover:bg-volleyball-purple/90 text-white rounded-md px-4 py-2 transition-all;
+  @apply bg-volleyball-cyan hover:bg-volleyball-cyan/90 text-white rounded-md px-4 py-2 transition-all;
 }
 
 .volleyball-button-secondary {
-  @apply bg-white border border-volleyball-purple text-volleyball-purple rounded-md px-4 py-2 transition-all hover:bg-volleyball-purple/10;
+  @apply bg-white border border-volleyball-cyan text-volleyball-cyan rounded-md px-4 py-2 transition-all hover:bg-volleyball-cyan/10;
 }
 
 .volleyball-card {
@@ -111,7 +111,7 @@
 }
 
 .volleyball-input {
-  @apply rounded-md border border-gray-300 px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-volleyball-purple focus:border-transparent;
+  @apply rounded-md border border-gray-300 px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-volleyball-cyan focus:border-transparent;
 }
 
 .volleyball-tab {
@@ -127,9 +127,9 @@
 }
 
 .volleyball-slider-thumb {
-  @apply w-5 h-5 bg-white rounded-full shadow border-2 border-volleyball-purple;
+  @apply w-5 h-5 bg-white rounded-full shadow border-2 border-volleyball-cyan;
 }
 
 .volleyball-slider-track {
-  @apply bg-volleyball-purple h-2 rounded-full;
+  @apply bg-volleyball-cyan h-2 rounded-full;
 }
