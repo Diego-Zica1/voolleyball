@@ -284,7 +284,7 @@ export default function AdminPage() {
             </p>
             <Button 
               onClick={handleResetConfirmations}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
+              className="bg-red-500 hover:bg-red-600 text-white"
             >
               Resetar Confirmações Agora
             </Button>
