@@ -111,18 +111,20 @@ export default function ScoreboardPage() {
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (isFullscreen && touchStartY !== null && touchTeam) {
+    if (isFullscreen && touchStartY !== null && touchTeam && !swipeLocked) {
       const currentY = e.touches[0].clientY;
       const diffY = touchStartY - currentY;
-      
-      // If swipe up (positive diff) increment score, if swipe down (negative diff) decrement score
-      // Using threshold to avoid accidental swipes
+
       if (diffY > 50) {
-        incrementScore(touchTeam);
-        setTouchStartY(currentY); // Reset starting position
+       incrementScore(touchTeam);
+       setTouchStartY(currentY);
+        setSwipeLocked(true);
+        setTimeout(() => setSwipeLocked(false), 300); // 300ms de bloqueio
       } else if (diffY < -50) {
-        decrementScore(touchTeam);
-        setTouchStartY(currentY); // Reset starting position
+       decrementScore(touchTeam);
+        setTouchStartY(currentY);
+        setSwipeLocked(true);
+        setTimeout(() => setSwipeLocked(false), 300);
       }
     }
   };
