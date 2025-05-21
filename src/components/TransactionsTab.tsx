@@ -55,6 +55,18 @@ export function TransactionsTab() {
     return date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
   };
 
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(p => p - 1);
+    }
+  };
+  
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(p => p + 1);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -132,9 +144,9 @@ export function TransactionsTab() {
               <PaginationContent>
                 <PaginationItem>
                   <PaginationPrevious 
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
+                    onClick={handlePreviousPage}
                     className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    aria-disabled={currentPage === 1}
                   />
                 </PaginationItem>
                 
@@ -152,9 +164,9 @@ export function TransactionsTab() {
                 
                 <PaginationItem>
                   <PaginationNext 
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
+                    onClick={handleNextPage}
                     className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    aria-disabled={currentPage === totalPages}
                   />
                 </PaginationItem>
               </PaginationContent>
