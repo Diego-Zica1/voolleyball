@@ -100,21 +100,19 @@ export default function ScoreboardPage() {
     setTouchTeam(null);
   };
 
-  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen && touchStartY !== null && touchTeam) {
-      const currentY = e.touches[0].clientY;
-      const diffY = touchStartY - currentY;
-      
-      // If swipe up (positive diff) increment score, if swipe down (negative diff) decrement score
-      // Using threshold to avoid accidental swipes
+      const endY = e.changedTouches[0].clientY;
+      const diffY = touchStartY - endY;
+
       if (diffY > 50) {
         incrementScore(touchTeam);
-        setTouchStartY(currentY); // Reset starting position
       } else if (diffY < -50) {
         decrementScore(touchTeam);
-        setTouchStartY(currentY); // Reset starting position
       }
     }
+    setTouchStartY(null);
+    setTouchTeam(null);
   };
   
   const saveSettings = async () => {
