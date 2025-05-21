@@ -11,7 +11,7 @@ import {
   removeConfirmation 
 } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, MapPin } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -212,22 +212,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="border-t pt-4 mt-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-gray-600 dark:text-gray-400">Local: {game.location}</p>
-                  {game.location_link && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex items-center text-volleyball-purple hover:text-volleyball-purple/80"
-                      asChild
-                    >
-                      <a href={game.location_link} target="_blank" rel="noopener noreferrer">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        Ver Localização
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                <p className="text-gray-600 dark:text-gray-400">Local: {game.location}</p>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {confirmations.length} confirmados de {game.max_players} vagas
                 </p>

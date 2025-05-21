@@ -7,12 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/components/AuthProvider";
-import { getFinanceSettings, addPayment, getAllPayments, getCurrentMonthBalance, getMonthlyBalance, getCashWithdrawals, addCashWithdrawal, getAllPaymentsPaginated, getCashWithdrawalsPaginated } from "@/lib/supabase";
+import { getFinanceSettings, addPayment, getAllPayments, getCurrentMonthBalance, getMonthlyBalance, getCashWithdrawals, addCashWithdrawal } from "@/lib/supabase";
 import { FinanceSettings, Payment, MonthlyBalance, CashWithdrawal } from "@/types";
 import { useToast } from "@/hooks/use-toast";
-import { format, parse, subMonths, addMonths } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -31,23 +28,12 @@ export default function FinancePage() {
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
   const [withdrawalReason, setWithdrawalReason] = useState("");
   
-  // Statement tab state
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
-  const [statementPage, setStatementPage] = useState(1);
-  const [pageSize] = useState(10);
-  const [statementPayments, setStatementPayments] = useState<Payment[]>([]);
-  const [statementWithdrawals, setStatementWithdrawals] = useState<CashWithdrawal[]>([]);
-  const [totalPayments, setTotalPayments] = useState(0);
-  const [totalWithdrawals, setTotalWithdrawals] = useState(0);
-  const [isLoadingStatement, setIsLoadingStatement] = useState(false);
-  
   const { user } = useAuth();
   const { toast } = useToast();
 
   const tabs = [
     { id: "overview", label: "Visão Geral" },
-    { id: "payment", label: "Realizar Pagamento" },
-    { id: "statement", label: "Extrato" }
+    { id: "payment", label: "Realizar Pagamento" }
   ];
   
   // Add withdrawal tab only for admin users
@@ -87,47 +73,6 @@ export default function FinancePage() {
 
     fetchData();
   }, [toast]);
-
-  // Fetch statement data when month or page changes
-  useEffect(() => {
-    if (activeTab !== "statement") return;
-
-    const fetchStatementData = async () => {
-      try {
-        setIsLoadingStatement(true);
-        const monthString = format(currentMonth, 'yyyy-MM');
-        
-        // Fetch payments for the selected month
-        const { payments, total: paymentsTotal } = await getAllPaymentsPaginated(
-          statementPage, 
-          pageSize, 
-          monthString
-        );
-        setStatementPayments(payments);
-        setTotalPayments(paymentsTotal);
-        
-        // Fetch withdrawals for the selected month
-        const { withdrawals, total: withdrawalsTotal } = await getCashWithdrawalsPaginated(
-          statementPage, 
-          pageSize, 
-          monthString
-        );
-        setStatementWithdrawals(withdrawals);
-        setTotalWithdrawals(withdrawalsTotal);
-      } catch (error) {
-        console.error("Error fetching statement data:", error);
-        toast({
-          title: "Erro ao carregar extrato",
-          description: "Não foi possível buscar os dados do extrato",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingStatement(false);
-      }
-    };
-
-    fetchStatementData();
-  }, [activeTab, currentMonth, statementPage, pageSize, toast]);
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -278,34 +223,6 @@ export default function FinancePage() {
     }
   };
 
-  // Navigate to previous month in statement
-  const goToPreviousMonth = () => {
-    setCurrentMonth(prevMonth => subMonths(prevMonth, 1));
-    setStatementPage(1); // Reset to first page when changing months
-  };
-
-  // Navigate to next month in statement
-  const goToNextMonth = () => {
-    setCurrentMonth(prevMonth => addMonths(prevMonth, 1));
-    setStatementPage(1); // Reset to first page when changing months
-  };
-
-  // Navigate to previous page in statement
-  const goToPreviousPage = () => {
-    if (statementPage > 1) {
-      setStatementPage(prevPage => prevPage - 1);
-    }
-  };
-
-  // Navigate to next page in statement
-  const goToNextPage = () => {
-    const totalItems = Math.max(totalPayments, totalWithdrawals);
-    const totalPages = Math.ceil(totalItems / pageSize);
-    if (statementPage < totalPages) {
-      setStatementPage(prevPage => prevPage + 1);
-    }
-  };
-
   if (isLoading) {
     return (
       <PageContainer title="Contabilidade">
@@ -343,18 +260,6 @@ export default function FinancePage() {
   };
 
   const userPayments = payments.filter(p => p.user_id === user?.id);
-
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'dd/MM/yyyy HH:mm');
-  };
-
-  // Calculate total pages for pagination
-  const calculateTotalPages = () => {
-    const totalItems = Math.max(totalPayments, totalWithdrawals);
-    return Math.ceil(totalItems / pageSize);
-  };
 
   return (
     <PageContainer 
@@ -559,168 +464,6 @@ export default function FinancePage() {
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
               Após o pagamento, registre-o no formulário ao lado.
             </p>
-          </div>
-        </div>
-      ) : activeTab === "statement" ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Extrato Financeiro</h2>
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToPreviousMonth}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="font-medium">
-                {format(currentMonth, 'MMMM yyyy', { locale: ptBR })}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToNextMonth}
-                disabled={
-                  currentMonth.getMonth() === new Date().getMonth() && 
-                  currentMonth.getFullYear() === new Date().getFullYear()
-                }
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            {isLoadingStatement ? (
-              <div className="text-center py-8">
-                Carregando dados do extrato...
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Payments Section */}
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Pagamentos</h3>
-                  {statementPayments.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead>
-                          <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                          {statementPayments.map(payment => (
-                            <tr key={payment.id}>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {formatDate(payment.created_at)}
-                              </td>
-                              <td className="px-4 py-3">
-                                {payment.username}
-                              </td>
-                              <td className="px-4 py-3 capitalize">
-                                {payment.payment_type === "monthly" ? "Mensalista" : "Avulso"}
-                              </td>
-                              <td className="px-4 py-3 text-green-500 font-medium">
-                                +{formatCurrency(payment.amount)}
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  payment.status === "approved" 
-                                    ? "bg-green-100 text-green-800" 
-                                    : "bg-yellow-100 text-yellow-800"
-                                }`}>
-                                  {payment.status === "approved" ? "Aprovado" : "Pendente"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4 text-gray-500">
-                      Nenhum pagamento registrado neste período
-                    </div>
-                  )}
-                </div>
-                
-                {/* Withdrawals Section - Only shown to admins */}
-                {user?.isAdmin && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-3">Resgates</h3>
-                    {statementWithdrawals.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                          <thead>
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Data</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Usuário</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Valor</th>
-                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Justificativa</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {statementWithdrawals.map(withdrawal => (
-                              <tr key={withdrawal.id}>
-                                <td className="px-4 py-3 whitespace-nowrap">
-                                  {formatDate(withdrawal.created_at)}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {withdrawal.username}
-                                </td>
-                                <td className="px-4 py-3 text-red-500 font-medium">
-                                  -{formatCurrency(withdrawal.amount)}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="max-w-xs truncate" title={withdrawal.reason}>
-                                    {withdrawal.reason}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-gray-500">
-                        Nenhum resgate registrado neste período
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Pagination controls */}
-                {(statementPayments.length > 0 || statementWithdrawals.length > 0) && (
-                  <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-sm text-gray-500">
-                      Página {statementPage} de {calculateTotalPages()}
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToPreviousPage}
-                        disabled={statementPage === 1}
-                      >
-                        Anterior
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={goToNextPage}
-                        disabled={statementPage >= calculateTotalPages()}
-                      >
-                        Próxima
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       ) : activeTab === "withdrawal" && user?.isAdmin ? (
