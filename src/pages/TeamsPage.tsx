@@ -1,68 +1,123 @@
 
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
-import { getAllPlayers, getLatestGame, getConfirmations } from "@/lib/supabase";
-import { Player, Team, Game, Confirmation } from "@/types";
+import { TabNav } from "@/components/TabNav";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Card } from "@/components/ui/card";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAllPlayers, getLatestGame, getConfirmations } from "@/lib/supabase";
+import { Player, Team, Confirmation } from "@/types";
+import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
-import { X, Plus, User } from "lucide-react";
+
+interface TeamOption {
+  name: string;
+  playersCount: number;
+}
 
 export default function TeamsPage() {
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [activeTab, setActiveTab] = useState("generate");
   const [confirmedPlayers, setConfirmedPlayers] = useState<Player[]>([]);
+  const [absentPlayers, setAbsentPlayers] = useState<Player[]>([]);
   const [unconfirmedPlayers, setUnconfirmedPlayers] = useState<Player[]>([]);
-  const [playerPool, setPlayerPool] = useState<Player[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
-  const [absentPlayers, setAbsentPlayers] = useState<string[]>([]);
-  
-  const [game, setGame] = useState<Game | null>(null);
-  const [numberOfTeams, setNumberOfTeams] = useState<number>(2);
-  const [balanceBySkill, setBalanceBySkill] = useState<boolean>(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSorting, setIsSorting] = useState(false);
-
+  const [isGeneratingTeams, setIsGeneratingTeams] = useState(false);
+  const [selectedTeamOption, setSelectedTeamOption] = useState<string>("2teams-3vs3");
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [allConfirmations, setAllConfirmations] = useState<Confirmation[]>([]);
+  
+  const { user } = useAuth();
   const { toast } = useToast();
+
+  const teamOptions: Record<string, TeamOption> = {
+    "2teams-3vs3": {
+      name: "2 Times (3x3)",
+      playersCount: 6
+    },
+    "2teams-4vs4": {
+      name: "2 Times (4x4)",
+      playersCount: 8
+    },
+    "2teams-5vs5": {
+      name: "2 Times (5x5)",
+      playersCount: 10
+    },
+    "2teams-6vs6": {
+      name: "2 Times (6x6)",
+      playersCount: 12
+    },
+    "3teams-3vs3": {
+      name: "3 Times (3x3)",
+      playersCount: 9
+    },
+    "3teams-4vs4": {
+      name: "3 Times (4x4)",
+      playersCount: 12
+    },
+    "4teams-3vs3": {
+      name: "4 Times (3x3)",
+      playersCount: 12
+    }
+  };
+
+  const tabs = [
+    { id: "generate", label: "Gerar Times" },
+    { id: "result", label: "Resultado" }
+  ];
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
-        // Get all players and their attributes
-        const allPlayers = await getAllPlayers();
-        setPlayers(allPlayers);
+        // First, get all players and all confirmations
+        const fetchedPlayers = await getAllPlayers();
+        setAllPlayers(fetchedPlayers);
         
-        // Get the latest game
         const latestGame = await getLatestGame();
-        if (latestGame) {
-          setGame(latestGame);
-          
-          // Get confirmations for this game
-          const confirmations = await getConfirmations(latestGame.id);
-          
-          // Filter players who confirmed for this game
-          const confirmedPlayersList = allPlayers.filter(player => 
-            confirmations.some(conf => conf.user_id === player.user_id)
-          );
-          
-          // Filter players who are not confirmed
-          const unconfirmedPlayersList = allPlayers.filter(player => 
-            !confirmations.some(conf => conf.user_id === player.user_id)
-          );
-          
-          setConfirmedPlayers(confirmedPlayersList);
-          setUnconfirmedPlayers(unconfirmedPlayersList);
-          setPlayerPool(confirmedPlayersList); // Initialize player pool with confirmed players
+        
+        if (!latestGame) {
+          toast({
+            title: "Nenhum jogo encontrado",
+            description: "Não há jogos agendados no momento",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
         }
+        
+        const fetchedConfirmations = await getConfirmations(latestGame.id);
+        setAllConfirmations(fetchedConfirmations);
+        
+        // Filter confirmed players
+        const confirmedPlayerIds = fetchedConfirmations.map(c => c.user_id);
+        const confirmedPlayersList = fetchedPlayers.filter(p => 
+          confirmedPlayerIds.includes(p.user_id) && !absentPlayers.some(ap => ap.id === p.id)
+        );
+        setConfirmedPlayers(confirmedPlayersList);
+        
+        // Get unconfirmed players (players that haven't confirmed attendance)
+        const unconfirmedPlayersList = fetchedPlayers.filter(p => 
+          !confirmedPlayerIds.includes(p.user_id) && !confirmedPlayersList.some(cp => cp.id === p.id)
+        );
+        
+        setUnconfirmedPlayers(unconfirmedPlayersList);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
           title: "Erro ao carregar dados",
-          description: "Não foi possível buscar os jogadores ou confirmações",
+          description: "Não foi possível buscar os jogadores confirmados",
           variant: "destructive",
         });
       } finally {
@@ -73,345 +128,400 @@ export default function TeamsPage() {
     fetchData();
   }, [toast]);
 
-  const handleNumberOfTeamsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value > 0) {
-      setNumberOfTeams(value);
-    }
-  };
-
-  const addPlayerToPool = () => {
-    if (!selectedPlayer) return;
-    
-    const playerToAdd = unconfirmedPlayers.find(p => p.id === selectedPlayer);
-    if (playerToAdd) {
-      setPlayerPool(prev => [...prev, playerToAdd]);
+  const generateTeams = () => {
+    if (confirmedPlayers.length === 0 && absentPlayers.length === 0) {
       toast({
-        title: "Jogador adicionado",
-        description: `${playerToAdd.username} foi adicionado ao sorteio.`
-      });
-      setSelectedPlayer("");
-    }
-  };
-  
-  const removePlayerFromPool = (playerId: string) => {
-    const playerToRemove = confirmedPlayers.find(p => p.id === playerId);
-    if (playerToRemove) {
-      if (absentPlayers.includes(playerId)) {
-        setAbsentPlayers(prev => prev.filter(id => id !== playerId));
-      } else {
-        setAbsentPlayers(prev => [...prev, playerId]);
-      }
-    }
-  };
-  
-  // Get the final list of players for the draw
-  const getPlayersForDraw = () => {
-    const presentConfirmedPlayers = confirmedPlayers.filter(
-      player => !absentPlayers.includes(player.id)
-    );
-    
-    // Add unconfirmed players that were manually added
-    const addedUnconfirmedPlayers = unconfirmedPlayers.filter(
-      player => playerPool.some(p => p.id === player.id)
-    );
-    
-    return [...presentConfirmedPlayers, ...addedUnconfirmedPlayers];
-  };
-
-  const sortTeams = () => {
-    const playersForDraw = getPlayersForDraw();
-    
-    if (playersForDraw.length === 0) {
-      toast({
-        title: "Sem jogadores",
-        description: "Não há jogadores disponíveis para sortear times",
+        title: "Nenhum jogador",
+        description: "Não há jogadores confirmados para gerar times",
         variant: "destructive",
       });
       return;
     }
-
-    setIsSorting(true);
-
+    
     try {
-      let playersCopy = [...playersForDraw];
-      const generatedTeams: Team[] = [];
-
-      // Create empty teams
-      for (let i = 1; i <= numberOfTeams; i++) {
-        generatedTeams.push({
-          id: i,
-          name: `Time ${i}`,
-          players: [],
-          average_rating: 0
+      setIsGeneratingTeams(true);
+      // Clone the confirmedPlayers array to avoid modifying the original
+      const playersToUse = [...confirmedPlayers];
+      
+      // Parse team option
+      const [teamCountStr, teamSizeStr] = selectedTeamOption.split("-");
+      const teamCount = parseInt(teamCountStr.replace("teams", ""));
+      const teamSize = parseInt(teamSizeStr.split("vs")[0]);
+      
+      const requiredPlayers = teamCount * teamSize;
+      
+      if (playersToUse.length < requiredPlayers) {
+        toast({
+          title: "Jogadores insuficientes",
+          description: `São necessários ${requiredPlayers} jogadores para esta configuração de times`,
+          variant: "destructive",
         });
+        setIsGeneratingTeams(false);
+        return;
       }
-
-      if (balanceBySkill) {
-        // Sort players by skill level (descending)
-        playersCopy.sort((a, b) => b.average_rating - a.average_rating);
-
-        // Distribute players to balance teams using snake draft
-        for (let i = 0; i < playersCopy.length; i++) {
-          const teamIndex = i % (numberOfTeams * 2) >= numberOfTeams
-            ? numberOfTeams * 2 - (i % (numberOfTeams * 2)) - 1
-            : i % numberOfTeams;
-          
-          generatedTeams[teamIndex].players.push(playersCopy[i]);
-        }
-      } else {
-        // Random shuffle
-        playersCopy = playersCopy
-          .map(value => ({ value, sort: Math.random() }))
-          .sort((a, b) => a.sort - b.sort)
-          .map(({ value }) => value);
-
-        // Distribute players equally
-        for (let i = 0; i < playersCopy.length; i++) {
-          const teamIndex = i % numberOfTeams;
-          generatedTeams[teamIndex].players.push(playersCopy[i]);
+      
+      // Sort players by skill level
+      playersToUse.sort((a, b) => b.average_rating - a.average_rating);
+      
+      // Initialize teams
+      const generatedTeams: Team[] = Array.from({ length: teamCount }, (_, i) => ({
+        id: i + 1,
+        name: `Time ${i + 1}`,
+        players: [],
+        average_rating: 0
+      }));
+      
+      // Distribute players using snake draft
+      for (let i = 0; i < teamSize; i++) {
+        const isReversed = i % 2 === 1;
+        const teamsOrder = isReversed ? [...Array(teamCount).keys()].reverse() : [...Array(teamCount).keys()];
+        
+        for (const teamIndex of teamsOrder) {
+          if (playersToUse.length > 0) {
+            const player = playersToUse.shift()!;
+            generatedTeams[teamIndex].players.push(player);
+          }
         }
       }
-
-      // Calculate average ratings for each team
+      
+      // Calculate average rating for each team
       generatedTeams.forEach(team => {
-        if (team.players.length > 0) {
-          team.average_rating = team.players.reduce((acc, player) => acc + player.average_rating, 0) / team.players.length;
-        }
+        const totalRating = team.players.reduce((sum, player) => sum + player.average_rating, 0);
+        team.average_rating = team.players.length > 0 ? totalRating / team.players.length : 0;
       });
-
+      
       setTeams(generatedTeams);
+      setActiveTab("result");
       
       toast({
-        title: "Times sorteados!",
-        description: `${numberOfTeams} times foram criados com sucesso.`
+        title: "Times gerados",
+        description: `${teamCount} times com ${teamSize} jogadores cada foram gerados com sucesso`,
       });
     } catch (error) {
-      console.error("Error sorting teams:", error);
+      console.error("Error generating teams:", error);
       toast({
-        title: "Erro no sorteio",
-        description: "Ocorreu um erro ao sortear os times",
+        title: "Erro ao gerar times",
+        description: "Ocorreu um erro ao gerar os times",
         variant: "destructive",
       });
     } finally {
-      setIsSorting(false);
+      setIsGeneratingTeams(false);
     }
+  };
+
+  const addUnconfirmedPlayer = () => {
+    if (!selectedPlayer) return;
+    
+    const player = unconfirmedPlayers.find(p => p.id === selectedPlayer);
+    if (!player) return;
+    
+    setConfirmedPlayers([...confirmedPlayers, player]);
+    setUnconfirmedPlayers(unconfirmedPlayers.filter(p => p.id !== selectedPlayer));
+    setSelectedPlayer("");
+    
+    toast({
+      title: "Jogador adicionado",
+      description: `${player.username} foi adicionado aos jogadores confirmados`,
+    });
+  };
+
+  const removeUnconfirmedPlayer = (playerId: string) => {
+    const player = confirmedPlayers.find(p => p.id === playerId);
+    
+    // Check if it's a player that was manually added
+    if (!allConfirmations.some(c => c.user_id === player?.user_id)) {
+      setConfirmedPlayers(confirmedPlayers.filter(p => p.id !== playerId));
+      
+      // Add back to unconfirmed players
+      if (player) {
+        setUnconfirmedPlayers([...unconfirmedPlayers, player]);
+      }
+      
+      toast({
+        title: "Jogador removido",
+        description: `${player?.username} foi removido dos jogadores confirmados`,
+      });
+    } else {
+      // If it's a confirmed player, mark as absent
+      markPlayerAbsent(playerId);
+    }
+  };
+  
+  const markPlayerAbsent = (playerId: string) => {
+    const player = confirmedPlayers.find(p => p.id === playerId);
+    if (!player) return;
+    
+    setAbsentPlayers([...absentPlayers, player]);
+    setConfirmedPlayers(confirmedPlayers.filter(p => p.id !== playerId));
+    
+    toast({
+      title: "Jogador ausente",
+      description: `${player.username} foi marcado como ausente`,
+    });
+  };
+  
+  const undoAbsent = (playerId: string) => {
+    const player = absentPlayers.find(p => p.id === playerId);
+    if (!player) return;
+    
+    setConfirmedPlayers([...confirmedPlayers, player]);
+    setAbsentPlayers(absentPlayers.filter(p => p.id !== playerId));
+    
+    toast({
+      title: "Ausência desfeita",
+      description: `${player.username} foi retornado à lista de confirmados`,
+    });
   };
 
   if (isLoading) {
     return (
-      <PageContainer title="Sorteio de Times">
-        <div className="text-center">Carregando dados para sorteio...</div>
+      <PageContainer title="Times">
+        <div className="text-center">Carregando jogadores...</div>
       </PageContainer>
     );
   }
 
+  const availablePlayers = confirmedPlayers.length;
+  const requiredPlayers = teamOptions[selectedTeamOption]?.playersCount || 0;
+  const canGenerateTeams = availablePlayers >= requiredPlayers;
+
   return (
     <PageContainer 
-      title="Sorteio de Times"
-      description="Configure e sorteie times equilibrados para o próximo jogo."
+      title="Times"
+      description="Gere times balanceados para o próximo jogo."
     >
-      <div className="grid md:grid-cols-3 gap-6">
-        <div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">Configurações do Sorteio</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Configure como os times serão sorteados
-            </p>
+      <div className="mb-6">
+        <TabNav
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={(tab) => setActiveTab(tab)}
+        />
+      </div>
 
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
-                  Número de Times
-                </label>
-                <Input
-                  id="numberOfTeams"
-                  type="number"
-                  min="1"
-                  value={numberOfTeams}
-                  onChange={handleNumberOfTeamsChange}
-                />
-              </div>
+      {activeTab === "generate" ? (
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Jogadores Confirmados ({confirmedPlayers.length})</h2>
+              {confirmedPlayers.length === 0 ? (
+                <div className="text-center py-6 text-gray-600">
+                  Nenhum jogador confirmou presença ainda
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Jogador</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Média</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {confirmedPlayers.map((player) => (
+                        <tr key={player.id}>
+                          <td className="px-4 py-3">{player.username}</td>
+                          <td className="px-4 py-3">{player.average_rating.toFixed(1)}</td>
+                          <td className="px-4 py-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => removeUnconfirmedPlayer(player.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              Remover
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="balanceBySkill"
-                  checked={balanceBySkill}
-                  onCheckedChange={setBalanceBySkill}
-                />
-                <label htmlFor="balanceBySkill" className="text-sm font-medium">
-                  Balancear por Habilidade
-                </label>
-              </div>
-              
-              {/* Adicionar jogador não confirmado */}
-              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-md font-semibold mb-3">Adicionar jogador não confirmado</h3>
-                <div className="flex space-x-2">
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Jogadores Ausentes ({absentPlayers.length})</h2>
+              {absentPlayers.length === 0 ? (
+                <div className="text-center py-6 text-gray-600">
+                  Nenhum jogador marcado como ausente
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Jogador</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Média</th>
+                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {absentPlayers.map((player) => (
+                        <tr key={player.id}>
+                          <td className="px-4 py-3">{player.username}</td>
+                          <td className="px-4 py-3">{player.average_rating.toFixed(1)}</td>
+                          <td className="px-4 py-3">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => undoAbsent(player.id)}
+                              className="text-volleyball-purple hover:text-volleyball-purple/80"
+                            >
+                              Desfazer
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
+
+            <div className="flex items-center space-x-2">
+              <Select 
+                value={selectedPlayer} 
+                onValueChange={setSelectedPlayer}
+              >
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Adicionar jogador não confirmado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {unconfirmedPlayers.map(player => (
+                    <SelectItem key={player.id} value={player.id}>{player.username}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                onClick={addUnconfirmedPlayer} 
+                disabled={!selectedPlayer}
+                className="volleyball-button-primary"
+              >
+                Adicionar
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Configurações dos Times</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium block mb-1">Formato dos Times</label>
                   <Select 
-                    value={selectedPlayer}
-                    onValueChange={setSelectedPlayer}
+                    value={selectedTeamOption} 
+                    onValueChange={setSelectedTeamOption}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecionar jogador" />
+                      <SelectValue placeholder="Selecione o formato" />
                     </SelectTrigger>
                     <SelectContent>
-                      {unconfirmedPlayers.map(player => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.username} ({player.average_rating.toFixed(1)})
+                      {Object.entries(teamOptions).map(([value, option]) => (
+                        <SelectItem key={value} value={value}>
+                          {option.name} - {option.playersCount} jogadores
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button 
-                    size="sm"
-                    onClick={addPlayerToPool}
-                    disabled={!selectedPlayer}
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Incluir
-                  </Button>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {requiredPlayers} jogadores necessários
+                  </p>
                 </div>
-              </div>
-              
-              {/* Jogadores ausentes */}
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-md font-semibold mb-3">Jogadores confirmados ausentes</h3>
-                {absentPlayers.length > 0 ? (
-                  <ul className="space-y-1">
-                    {absentPlayers.map(playerId => {
-                      const player = confirmedPlayers.find(p => p.id === playerId);
-                      return player ? (
-                        <li key={playerId} className="flex items-center justify-between bg-red-50 dark:bg-red-900/20 rounded px-2 py-1">
-                          <span>{player.username}</span>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => removePlayerFromPool(playerId)}
-                          >
-                            <X size={14} />
-                          </Button>
-                        </li>
-                      ) : null;
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Todos os jogadores confirmados estão presentes
+
+                <div>
+                  <h3 className="text-sm font-medium mb-1">Jogadores disponíveis:</h3>
+                  <p className={`font-medium ${canGenerateTeams ? 'text-green-500' : 'text-orange-500'}`}>
+                    {availablePlayers} / {requiredPlayers}
+                  </p>
+                  {!canGenerateTeams && (
+                    <p className="text-sm text-orange-500 mt-1">
+                      Faltam {requiredPlayers - availablePlayers} jogadores para este formato
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  onClick={generateTeams}
+                  disabled={!canGenerateTeams || isGeneratingTeams}
+                  className="w-full volleyball-button-primary"
+                >
+                  {isGeneratingTeams ? "Gerando..." : "Gerar Times"}
+                </Button>
+
+                {!canGenerateTeams && availablePlayers > 0 && (
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Escolha um formato de time compatível com o número de jogadores disponíveis
                   </p>
                 )}
               </div>
-
-              <Button 
-                onClick={sortTeams}
-                disabled={isSorting || getPlayersForDraw().length === 0}
-                className="w-full mt-2 volleyball-button-primary"
-              >
-                {isSorting ? "Sorteando Times..." : "Sortear Times"}
-              </Button>
-
-              <div className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-                <p>Jogadores disponíveis: {getPlayersForDraw().length}</p>
-                <p>Jogadores por time: {getPlayersForDraw().length > 0 ? Math.ceil(getPlayersForDraw().length / numberOfTeams) : 0}</p>
-              </div>
-            </div>
+            </Card>
           </div>
-          
-          {/* Lista de jogadores confirmados */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
-            <h2 className="text-xl font-semibold mb-4">Jogadores Confirmados</h2>
-            {confirmedPlayers.length > 0 ? (
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {confirmedPlayers.map(player => (
-                  <li key={player.id} className="py-2 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <span className={absentPlayers.includes(player.id) ? 'line-through text-gray-400' : ''}>
-                        {player.username} ({player.average_rating.toFixed(1)})
-                      </span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removePlayerFromPool(player.id)}
-                      className={absentPlayers.includes(player.id) ? "text-green-500" : "text-red-500"}
-                    >
-                      {absentPlayers.includes(player.id) ? "Incluir" : "Marcar Ausente"}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">
-                Nenhum jogador confirmado para este jogo
-              </p>
-            )}
-          </div>
-          
-          {/* Lista de jogadores não confirmados adicionados */}
-          {playerPool.some(p => !confirmedPlayers.some(cp => cp.id === p.id)) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
-              <h2 className="text-xl font-semibold mb-4">Jogadores Não Confirmados (Adicionados)</h2>
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {playerPool
-                  .filter(p => !confirmedPlayers.some(cp => cp.id === p.id))
-                  .map(player => (
-                    <li key={player.id} className="py-2 flex items-center justify-between">
-                      <div className="flex items-center">
-                        <User size={16} className="mr-2 text-blue-500" />
-                        <span>{player.username} ({player.average_rating.toFixed(1)})</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setPlayerPool(prev => prev.filter(p => p.id !== player.id))}
-                        className="text-red-500"
-                      >
-                        Remover
-                      </Button>
-                    </li>
-                  ))
-                }
-              </ul>
-            </div>
-          )}
         </div>
-
-        {teams.map((team, index) => (
-          <div key={team.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">{team.name}</h2>
-              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}`}>
-                Média: {team.average_rating.toFixed(1)}
-              </div>
-            </div>
-
-            {team.players.length > 0 ? (
-              <ul className="mt-4 space-y-2">
-                {team.players.map(player => (
-                  <li key={player.id} className="flex justify-between items-center py-2 border-b last:border-0">
-                    <span>{player.username}</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{player.average_rating.toFixed(1)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400 mt-4">
-                Nenhum jogador atribuído
-              </p>
-            )}
+      ) : (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Times Gerados</h2>
+            <Button 
+              onClick={() => setActiveTab("generate")} 
+              variant="outline"
+            >
+              Voltar
+            </Button>
           </div>
-        ))}
 
-        {teams.length === 0 && (
-          <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-gray-500 dark:text-gray-400">
-                Clique em "Sortear Times" para criar os times
-              </p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {teams.map((team) => (
+              <Card key={team.id} className="p-6">
+                <h3 className="text-lg font-semibold mb-2 flex justify-between">
+                  {team.name}
+                  <span className="text-volleyball-purple">
+                    {team.average_rating.toFixed(1)}
+                  </span>
+                </h3>
+                <ul className="divide-y">
+                  {team.players.map((player) => (
+                    <li key={player.id} className="py-2 flex justify-between">
+                      <span>{player.username}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ))}
           </div>
-        )}
-      </div>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                className="volleyball-button-primary"
+              >
+                Jogar com esses times
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Começar jogo com esses times?</DialogTitle>
+                <DialogDescription>
+                  Você quer iniciar uma partida com esses times e ir para o placar?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {}}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="volleyball-button-primary"
+                >
+                  Ir para o Placar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
     </PageContainer>
   );
 }

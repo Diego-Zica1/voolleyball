@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -32,6 +33,7 @@ export interface Game {
   max_players: number;
   created_by: string;
   created_at: string;
+  location_link?: string;
 }
 
 export interface Confirmation {

@@ -1,141 +1,75 @@
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { ThemeProvider } from './components/ThemeProvider';
+import { AuthProvider, useAuth } from './components/AuthProvider';
+import Header from './components/Header';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import TeamsPage from './pages/TeamsPage';
+import AttributesPage from './pages/AttributesPage';
+import FinancePage from './pages/FinancePage';
+import AdminPage from './pages/AdminPage';
+import ScoreboardPage from './pages/ScoreboardPage';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./components/AuthProvider";
-import { ThemeProvider } from "./components/ThemeProvider";
-import { Header } from "./components/Header";
-import { useAuth } from "./components/AuthProvider";
+const App = () => {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
 
-// Pages
-import LoginPage from "./pages/LoginPage";
-import HomePage from "./pages/HomePage";
-import AttributesPage from "./pages/AttributesPage";
-import TeamsPage from "./pages/TeamsPage";
-import FinancePage from "./pages/FinancePage";
-import ScoreboardPage from "./pages/ScoreboardPage";
-import AdminPage from "./pages/AdminPage";
-import NotFound from "./pages/NotFound";
+  useEffect(() => {
+    // Simulate loading
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  }, []);
 
-const queryClient = new QueryClient();
-
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
-    </div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Carregando...
+      </div>
+    );
   }
-  
-  if (!user) {
-    return <Navigate to="/login" />;
-  }
-  
-  return <>{children}</>;
-};
 
-// Auth check component that redirects logged in users away from login page
-const AuthCheck = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading } = useAuth();
-  
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
-    </div>;
-  }
-  
-  if (user) {
-    return <Navigate to="/" />;
-  }
-  
-  return <>{children}</>;
-};
+  // Add a router guard for the AttributesPage that only allows admins
+  const AttributesPageGuard = () => {
+    if (!user) {
+      return <Navigate to="/login" replace />;
+    }
+    if (!user.isAdmin) {
+      return <Navigate to="/" replace />;
+    }
+    return <AttributesPage />;
+  };
 
-const AppRoutes = () => {
   return (
-    <Routes>
-      <Route 
-        path="/login" 
-        element={
-          <AuthCheck>
-            <LoginPage />
-          </AuthCheck>
-        } 
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
+    <ThemeProvider
+      defaultTheme="light"
+      storageKey="volleyball-ui-theme"
+    >
+      <div className="flex flex-col min-h-screen">
+        <Router>
+          <AuthProvider>
             <Header />
-            <HomePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/atributos"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <AttributesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/times"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <TeamsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contabilidade"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <FinancePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route 
-        path="/placar" 
-        element={<ScoreboardPage />} 
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute>
-            <Header />
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+            <div className="flex-grow">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/teams" element={<TeamsPage />} />
+                <Route path="/attributes" element={<AttributesPageGuard />} />
+                <Route path="/finance" element={<FinancePage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/scoreboard" element={<ScoreboardPage />} />
+              </Routes>
+            </div>
+          </AuthProvider>
+        </Router>
+        <Toaster />
+      </div>
+    </ThemeProvider>
   );
 };
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen">
-              <AppRoutes />
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
 
 export default App;
