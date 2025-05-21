@@ -27,6 +27,8 @@ export default function ScoreboardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchTeam, setTouchTeam] = useState<'A' | 'B' | null>(null);
+  const [wasSwipe, setWasSwipe] = useState(false);
+  const [swipeLocked, setSwipeLocked] = useState(false);
   
   const { toast } = useToast();
 
@@ -90,7 +92,7 @@ export default function ScoreboardPage() {
   // Touch gesture handlers for fullscreen mode
 
   const handleScoreClick = (team: 'A' | 'B') => {
-    if (isFullscreen && !setWasSwipe) {
+    if (isFullscreen && !wasSwipe) {
       incrementScore(team);
     }
   };
@@ -121,7 +123,7 @@ export default function ScoreboardPage() {
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (isFullscreen && touchStartY !== null && touchTeam && !setSwipeLocked) {
+    if (isFullscreen && touchStartY !== null && touchTeam && !swipeLocked) {
       const currentY = e.touches[0].clientY;
       const diffY = touchStartY - currentY;
 
@@ -513,12 +515,5 @@ export default function ScoreboardPage() {
       />
     </>
   );
-}
-function setSwipeLocked(arg0: boolean) {
-  throw new Error("Function not implemented.");
-}
-
-function setWasSwipe(arg0: boolean) {
-  throw new Error("Function not implemented.");
 }
 
