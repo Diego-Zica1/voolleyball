@@ -27,6 +27,9 @@ export default function ScoreboardPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [touchTeam, setTouchTeam] = useState<'A' | 'B' | null>(null);
+  const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
+  const TAP_THRESHOLD = 200; // milissegundos
+  const MOVE_THRESHOLD = 20; // pixels
   
   const { toast } = useToast();
 
@@ -90,15 +93,29 @@ export default function ScoreboardPage() {
   // Touch gesture handlers for fullscreen mode
   const handleTouchStart = (team: 'A' | 'B', e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen) {
-      setTouchTeam(team);
-      setTouchStartY(e.touches[0].clientY);
+    setTouchTeam(team);
+    setTouchStartY(e.touches[0].clientY);
+    setTouchStartTime(Date.now());
     }
   };
 
-  const handleTouchEnd = () => {
-    setTouchStartY(null);
-    setTouchTeam(null);
-  };
+  const handleTouchEnd = (e?: TouchEvent<HTMLDivElement>) => {
+    if (isFullscreen && touchStartY !== null && touchStartTime !== null && touchTeam) {
+      // Se não houve movimento significativo e foi rápido, é um tap
+      const touch = e?.changedTouches?.[0];
+      const endY = touch ? touch.clientY : null;
+      const diffY = endY !== null && touchStartY !== null ? Math.abs(endY - touchStartY) : 0;
+      const timeDiff = Date.now() - touchStartTime;
+
+      if (diffY < MOVE_THRESHOLD && timeDiff < TAP_THRESHOLD) {
+        incrementScore(touchTeam);
+      }
+    }
+  setTouchStartY(null);
+  setTouchTeam(null);
+  setTouchStartTime(null);
+};
+
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen && touchStartY !== null && touchTeam) {
@@ -357,7 +374,7 @@ export default function ScoreboardPage() {
                 background: isFullscreen ? teamAColor : ''
               }}
               onTouchStart={(e) => handleTouchStart('A', e)}
-              onTouchEnd={handleTouchEnd}
+              onTouchEnd={(e) => handleTouchEnd(e)}
               onTouchMove={handleTouchMove}
             >
               <h2 className={`${
@@ -424,7 +441,7 @@ export default function ScoreboardPage() {
                 background: isFullscreen ? teamBColor : ''
               }}
               onTouchStart={(e) => handleTouchStart('B', e)}
-              onTouchEnd={handleTouchEnd}
+              onTouchEnd={(e) => handleTouchEnd(e)}
               onTouchMove={handleTouchMove}
             >
               <h2 className={`${
