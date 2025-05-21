@@ -116,12 +116,12 @@ export default function ScoreboardPage() {
       const diffY = touchStartY - currentY;
 
       if (diffY > 50) {
-       incrementScore(touchTeam);
-       setTouchStartY(currentY);
+        incrementScore(touchTeam);
+        setTouchStartY(currentY);
         setSwipeLocked(true);
         setTimeout(() => setSwipeLocked(false), 300); // 300ms de bloqueio
       } else if (diffY < -50) {
-       decrementScore(touchTeam);
+        decrementScore(touchTeam);
         setTouchStartY(currentY);
         setSwipeLocked(true);
         setTimeout(() => setSwipeLocked(false), 300);
@@ -502,3 +502,7 @@ export default function ScoreboardPage() {
     </>
   );
 }
+function setSwipeLocked(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
