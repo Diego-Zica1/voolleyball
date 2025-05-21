@@ -338,10 +338,10 @@ export default function ScoreboardPage() {
       )}
       
       {/* Placar principal (referenciado para o modo tela cheia) */}
-      <div 
+      {/*<div 
         ref={scoreboardRef}
         className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
-      >
+      >*/}
         <div className={`w-full h-full max-w-full mx-auto ${!showControls || isFullscreen ? 'p-0' : ''}`}>
           <div className={`flex flex-col md:flex-row justify-between ${
             isFullscreen ? 'h-full' : 'gap-8'

@@ -380,7 +380,7 @@ export default function TeamsPage() {
           <div key={team.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{team.name}</h2>
-              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-100 text-green-800' : 'bg-green-100 text-gray-800'}`}>
+              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}`}>
                 Média: {team.average_rating.toFixed(1)}
               </div>
             </div>
