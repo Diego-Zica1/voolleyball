@@ -452,7 +452,7 @@ export default function ScoreboardPage() {
               </div>
               
               {/* Botões para incrementar/decrementar (visíveis sempre) */}
-              <div className="flex justify-center mt-6 gap-4">
+              {/*<div className="flex justify-center mt-6 gap-4">
                 <Button 
                   variant="outline"
                   size="icon"
@@ -477,7 +477,7 @@ export default function ScoreboardPage() {
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
-              </div>
+              </div>*/}
             </div>
           </div>
         </div>
