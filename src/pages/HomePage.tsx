@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { MapPin } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -212,7 +213,26 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="border-t pt-4 mt-4">
-                <p className="text-gray-600 dark:text-gray-400">Local: {game.location}</p>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Local: {game.location}
+                  </span>
+                  <Button
+                    asChild
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-2 bg-gray-700 text-white hover:bg-gray-600 px-4 py-2"
+                  >
+                    <a
+                      href="https://maps.app.goo.gl/Gzh9c2FREp2dGzCB6"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <MapPin className="w-4 h-4 mr-1" />
+                      Ver Localização
+                    </a>
+                  </Button>
+                </div>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {confirmations.length} confirmados de {game.max_players} vagas
                 </p>
