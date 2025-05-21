@@ -5,6 +5,7 @@ import { ThemeOptions } from '../types';
 type ThemeProviderProps = {
   children: React.ReactNode;
   defaultTheme?: ThemeOptions;
+  storageKey?: string;
 };
 
 type ThemeProviderState = {
@@ -13,7 +14,7 @@ type ThemeProviderState = {
 };
 
 const initialTheme: ThemeOptions = {
-  mode: 'dark', // Modificado para 'dark'
+  mode: 'dark',
   colorScheme: 'purple',
 };
 
@@ -22,11 +23,12 @@ const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undef
 export function ThemeProvider({
   children,
   defaultTheme = initialTheme,
+  storageKey = 'volleyball-theme',
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<ThemeOptions>(
     () => {
       try {
-        const storedTheme = localStorage.getItem('volleyball-theme');
+        const storedTheme = localStorage.getItem(storageKey);
         return storedTheme ? JSON.parse(storedTheme) : defaultTheme;
       } catch (e) {
         return defaultTheme;
@@ -40,8 +42,8 @@ export function ThemeProvider({
     root.classList.remove('light', 'dark');
     root.classList.add(theme.mode);
     
-    localStorage.setItem('volleyball-theme', JSON.stringify(theme));
-  }, [theme]);
+    localStorage.setItem(storageKey, JSON.stringify(theme));
+  }, [theme, storageKey]);
 
   return (
     <ThemeProviderContext.Provider value={{ theme, setTheme }}>
