@@ -111,7 +111,7 @@ export default function ScoreboardPage() {
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (isFullscreen && touchStartY !== null && touchTeam && !swipeLocked) {
+    if (isFullscreen && touchStartY !== null && touchTeam && !setSwipeLocked) {
       const currentY = e.touches[0].clientY;
       const diffY = touchStartY - currentY;
 
