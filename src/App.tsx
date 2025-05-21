@@ -3,19 +3,19 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from './components/ThemeProvider';
-import { AuthProvider, useAuth } from './components/AuthProvider';
+import { AuthProvider } from './components/AuthProvider';
 import { Header } from './components/Header';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/LoginPage'; // Using LoginPage as a fallback since RegisterPage doesn't exist
+import RegisterPage from './pages/RegisterPage';
 import TeamsPage from './pages/TeamsPage';
 import AttributesPage from './pages/AttributesPage';
 import FinancePage from './pages/FinancePage';
 import AdminPage from './pages/AdminPage';
 import ScoreboardPage from './pages/ScoreboardPage';
 
-const App = () => {
-  const { user } = useAuth();
+// Create a separate component for routes that will have access to AuthProvider
+const AppRoutes = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,17 +33,26 @@ const App = () => {
     );
   }
 
-  // Add a router guard for the AttributesPage that only allows admins
-  const AttributesPageGuard = () => {
-    if (!user) {
-      return <Navigate to="/login" replace />;
-    }
-    if (!user.isAdmin) {
-      return <Navigate to="/" replace />;
-    }
-    return <AttributesPage />;
-  };
+  return (
+    <>
+      <Header />
+      <div className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/teams" element={<TeamsPage />} />
+          <Route path="/attributes" element={<AttributesPage />} />
+          <Route path="/finance" element={<FinancePage />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/scoreboard" element={<ScoreboardPage />} />
+        </Routes>
+      </div>
+    </>
+  );
+};
 
+const App = () => {
   return (
     <ThemeProvider
       defaultTheme={{
@@ -55,19 +64,7 @@ const App = () => {
       <div className="flex flex-col min-h-screen">
         <Router>
           <AuthProvider>
-            <Header />
-            <div className="flex-grow">
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/teams" element={<TeamsPage />} />
-                <Route path="/attributes" element={<AttributesPageGuard />} />
-                <Route path="/finance" element={<FinancePage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/scoreboard" element={<ScoreboardPage />} />
-              </Routes>
-            </div>
+            <AppRoutes />
           </AuthProvider>
         </Router>
         <Toaster />
