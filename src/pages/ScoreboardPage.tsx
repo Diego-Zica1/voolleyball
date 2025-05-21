@@ -88,6 +88,13 @@ export default function ScoreboardPage() {
   };
 
   // Touch gesture handlers for fullscreen mode
+
+  const handleScoreClick = (team: 'A' | 'B') => {
+    if (isFullscreen && !setWasSwipe) {
+      incrementScore(team);
+    }
+  };
+
   const handleTouchStart = (team: 'A' | 'B', e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen) {
       setTouchTeam(team);
@@ -102,12 +109,15 @@ export default function ScoreboardPage() {
 
       if (diffY > 50) {
         incrementScore(touchTeam);
+        setWasSwipe(true);
       } else if (diffY < -50) {
         decrementScore(touchTeam);
+        setWasSwipe(true);
       }
     }
     setTouchStartY(null);
     setTouchTeam(null);
+    setTimeout(() => setWasSwipe(false), 100); // reseta após 100ms
   };
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
@@ -371,6 +381,7 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('A', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
+              onClick={() => handleScoreClick('A')}
             >
               <h2 className={`${
                 isFullscreen 
@@ -438,6 +449,7 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('B', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
+              onClick={() => handleScoreClick('B')}
             >
               <h2 className={`${
                 isFullscreen 
@@ -503,6 +515,10 @@ export default function ScoreboardPage() {
   );
 }
 function setSwipeLocked(arg0: boolean) {
+  throw new Error("Function not implemented.");
+}
+
+function setWasSwipe(arg0: boolean) {
   throw new Error("Function not implemented.");
 }
 
