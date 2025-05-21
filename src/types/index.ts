@@ -101,3 +101,14 @@ export interface ScoreboardSettings {
   team_b_font_color?: string;
   updated_at?: string;
 }
+
+export interface Transaction {
+  id: string;
+  type: 'payment' | 'withdrawal';
+  reference_id: string;
+  amount: number;
+  user_id: string;
+  username: string;
+  description: string;
+  created_at: string;
+}

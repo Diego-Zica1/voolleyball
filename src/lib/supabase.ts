@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings, Transaction } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -426,12 +426,18 @@ export const getMonthlyBalance = async (): Promise<MonthlyBalance[]> => {
 
 export const getCurrentMonthBalance = async (): Promise<number> => {
   try {
-    console.log("Calculating current month balance...");
-    const balances = await getMonthlyBalance();
+    console.log("Calculando saldo atual...");
+    const { data, error } = await supabase.rpc('get_current_balance');
     
-    return balances.reduce((total, month) => total + month.balance_amount, 0);
+    if (error) {
+      console.error("Erro ao calcular saldo atual:", error);
+      return 0;
+    }
+    
+    console.log("Saldo atual calculado:", data);
+    return data || 0;
   } catch (error) {
-    console.error("Error in getCurrentMonthBalance:", error);
+    console.error("Erro em getCurrentMonthBalance:", error);
     return 0;
   }
 };
@@ -542,5 +548,77 @@ export const updateScoreboardSettings = async (settings: Partial<ScoreboardSetti
   } catch (error) {
     console.error("Error in updateScoreboardSettings:", error);
     return false;
+  }
+};
+
+export const getTransactions = async (
+  page: number = 1,
+  limit: number = 10,
+  month?: string
+): Promise<{ data: Transaction[], count: number }> => {
+  try {
+    console.log("Buscando transações:", page, limit, month);
+    
+    let query = supabase
+      .from('transactions')
+      .select('*', { count: 'exact' });
+    
+    if (month) {
+      // Filtrar por mês no formato 'YYYY-MM'
+      const startDate = `${month}-01`;
+      // Calcular a data do final do mês
+      const endDate = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]), 0);
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      
+      query = query.gte('created_at', startDate).lte('created_at', formattedEndDate);
+    }
+    
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+    
+    if (error) {
+      console.error("Erro ao buscar transações:", error);
+      throw error;
+    }
+    
+    console.log("Transações:", data, "Total:", count);
+    return { 
+      data: data as unknown as Transaction[],
+      count: count || 0
+    };
+  } catch (error) {
+    console.error("Erro em getTransactions:", error);
+    return { data: [], count: 0 };
+  }
+};
+
+export const getAvailableMonths = async (): Promise<string[]> => {
+  try {
+    console.log("Buscando meses disponíveis...");
+    
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('created_at');
+    
+    if (error) {
+      console.error("Erro ao buscar meses disponíveis:", error);
+      throw error;
+    }
+    
+    // Extrair meses únicos no formato 'YYYY-MM'
+    const months = new Set<string>();
+    data?.forEach(item => {
+      const date = new Date(item.created_at);
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months.add(month);
+    });
+    
+    const sortedMonths = Array.from(months).sort().reverse();
+    console.log("Meses disponíveis:", sortedMonths);
+    return sortedMonths;
+  } catch (error) {
+    console.error("Erro em getAvailableMonths:", error);
+    return [];
   }
 };

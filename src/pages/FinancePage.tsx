@@ -10,6 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { getFinanceSettings, addPayment, getAllPayments, getCurrentMonthBalance, getMonthlyBalance, getCashWithdrawals, addCashWithdrawal } from "@/lib/supabase";
 import { FinanceSettings, Payment, MonthlyBalance, CashWithdrawal } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { TransactionsTab } from "@/components/TransactionsTab";
 
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -33,7 +34,8 @@ export default function FinancePage() {
 
   const tabs = [
     { id: "overview", label: "Visão Geral" },
-    { id: "payment", label: "Realizar Pagamento" }
+    { id: "payment", label: "Realizar Pagamento" },
+    { id: "extract", label: "Extrato" }
   ];
   
   // Add withdrawal tab only for admin users
@@ -466,6 +468,8 @@ export default function FinancePage() {
             </p>
           </div>
         </div>
+      ) : activeTab === "extract" ? (
+        <TransactionsTab />
       ) : activeTab === "withdrawal" && user?.isAdmin ? (
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
