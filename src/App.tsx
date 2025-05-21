@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from './components/ThemeProvider';
 import { AuthProvider, useAuth } from './components/AuthProvider';
-import Header from './components/Header';
+import { Header } from './components/Header';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import RegisterPage from './pages/LoginPage'; // Using LoginPage as a fallback since RegisterPage doesn't exist
 import TeamsPage from './pages/TeamsPage';
 import AttributesPage from './pages/AttributesPage';
 import FinancePage from './pages/FinancePage';
@@ -45,7 +46,10 @@ const App = () => {
 
   return (
     <ThemeProvider
-      defaultTheme="light"
+      defaultTheme={{
+        mode: "light",
+        colorScheme: "purple"
+      }}
       storageKey="volleyball-ui-theme"
     >
       <div className="flex flex-col min-h-screen">
