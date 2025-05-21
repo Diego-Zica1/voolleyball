@@ -115,6 +115,9 @@ export default function ScoreboardPage() {
       } else if (diffY < -50) {
         decrementScore(touchTeam);
         setWasSwipe(true);
+      } else {
+        // Toque simples (não foi swipe)
+        incrementScore(touchTeam);
       }
     }
     setTouchStartY(null);
@@ -383,7 +386,7 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('A', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
-              onClick={() => handleScoreClick('A')}
+              
             >
               <h2 className={`${
                 isFullscreen 
@@ -451,7 +454,7 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('B', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
-              onClick={() => handleScoreClick('B')}
+              
             >
               <h2 className={`${
                 isFullscreen 
