@@ -31,6 +31,7 @@ export default function ScoreboardPage() {
   const [swipeLocked, setSwipeLocked] = useState(false);
   
   const { toast } = useToast();
+  const swipeDetected = useRef(false);
 
   useEffect(() => {
     // Get fullscreen state
@@ -101,6 +102,7 @@ export default function ScoreboardPage() {
     if (isFullscreen) {
       setTouchTeam(team);
       setTouchStartY(e.touches[0].clientY);
+      swipeDetected.current = false; // resetar no início do toque
     }
   };
 
@@ -110,20 +112,21 @@ export default function ScoreboardPage() {
       const diffY = touchStartY - endY;
 
       if (diffY > 50) {
-        incrementScore(touchTeam);
-        setWasSwipe(true);
+        // Swipe já tratado no touchMove
+        // Não faça nada aqui
       } else if (diffY < -50) {
-        decrementScore(touchTeam);
-        setWasSwipe(true);
-      } else {
-        // Toque simples (não foi swipe)
+        // Swipe já tratado no touchMove
+        // Não faça nada aqui
+      } else if (!swipeDetected.current) {
+        // Toque simples
         incrementScore(touchTeam);
       }
     }
     setTouchStartY(null);
     setTouchTeam(null);
-    setTimeout(() => setWasSwipe(false), 100); // reseta após 100ms
+    setTimeout(() => setWasSwipe(false), 100);
   };
+
 
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen && touchStartY !== null && touchTeam && !swipeLocked) {
@@ -134,11 +137,13 @@ export default function ScoreboardPage() {
         incrementScore(touchTeam);
         setTouchStartY(currentY);
         setSwipeLocked(true);
+        swipeDetected.current = true; // swipe detectado!
         setTimeout(() => setSwipeLocked(false), 300); // 300ms de bloqueio
       } else if (diffY < -50) {
         decrementScore(touchTeam);
         setTouchStartY(currentY);
         setSwipeLocked(true);
+        swipeDetected.current = true; // swipe detectado!
         setTimeout(() => setSwipeLocked(false), 300);
       }
     }
