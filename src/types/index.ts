@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -110,5 +111,15 @@ export interface Transaction {
   user_id: string;
   username: string;
   description: string;
+  created_at: string;
+}
+
+export interface MvpVote {
+  id: string;
+  game_id: string;
+  voter_id: string;
+  player_id: string;
+  username: string;
+  rank: number;
   created_at: string;
 }

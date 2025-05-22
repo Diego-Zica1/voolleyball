@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings, Transaction } from '../types';
+import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings, Transaction, MvpVote } from '../types';
 
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
@@ -620,5 +620,116 @@ export const getAvailableMonths = async (): Promise<string[]> => {
   } catch (error) {
     console.error("Erro em getAvailableMonths:", error);
     return [];
+  }
+};
+
+export const getMvpVotes = async (gameId: string): Promise<MvpVote[]> => {
+  try {
+    console.log("Fetching MVP votes for game:", gameId);
+    const { data, error } = await supabase
+      .from('mvp_votes')
+      .select('*')
+      .eq('game_id', gameId);
+      
+    if (error) {
+      console.error("Error fetching MVP votes:", error);
+      throw error;
+    }
+    
+    console.log("MVP votes fetched:", data);
+    return data || [];
+  } catch (error) {
+    console.error("Error in getMvpVotes:", error);
+    return [];
+  }
+};
+
+export const addMvpVote = async (vote: Omit<MvpVote, 'id' | 'created_at'>): Promise<any> => {
+  try {
+    console.log("Adding MVP vote:", vote);
+    const { data, error } = await supabase
+      .from('mvp_votes')
+      .insert(vote);
+      
+    if (error) {
+      console.error("Error adding MVP vote:", error);
+      throw error;
+    }
+    
+    console.log("MVP vote added successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in addMvpVote:", error);
+    throw error;
+  }
+};
+
+export const getGameById = async (gameId: string): Promise<Game | null> => {
+  try {
+    console.log("Fetching game by ID:", gameId);
+    const { data, error } = await supabase
+      .from('games')
+      .select('*')
+      .eq('id', gameId)
+      .single();
+      
+    if (error) {
+      console.error("Error fetching game by ID:", error);
+      throw error;
+    }
+    
+    console.log("Game fetched:", data);
+    return data;
+  } catch (error) {
+    console.error("Error in getGameById:", error);
+    return null;
+  }
+};
+
+export const getPreviousGame = async (): Promise<Game | null> => {
+  try {
+    console.log("Fetching previous game...");
+    const { data, error } = await supabase
+      .from('games')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(2);
+      
+    if (error) {
+      console.error("Error fetching previous game:", error);
+      throw error;
+    }
+    
+    if (!data || data.length < 2) {
+      console.log("No previous game found");
+      return null;
+    }
+    
+    console.log("Previous game fetched:", data[1]);
+    return data[1];
+  } catch (error) {
+    console.error("Error in getPreviousGame:", error);
+    return null;
+  }
+};
+
+export const hasUserVoted = async (gameId: string, userId: string): Promise<boolean> => {
+  try {
+    console.log("Checking if user has voted:", gameId, userId);
+    const { data, error } = await supabase
+      .from('mvp_votes')
+      .select('id')
+      .eq('game_id', gameId)
+      .eq('voter_id', userId);
+      
+    if (error) {
+      console.error("Error checking if user has voted:", error);
+      throw error;
+    }
+    
+    return data !== null && data.length > 0;
+  } catch (error) {
+    console.error("Error in hasUserVoted:", error);
+    return false;
   }
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { Button } from "@/components/ui/button";
@@ -15,11 +14,16 @@ import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MapPin } from "lucide-react";
+import { MvpPodium } from "@/components/MvpPodium";
+import { MvpVoting } from "@/components/MvpVoting";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function HomePage() {
   const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
+  const [previousGame, setPreviousGame] = useState<Game | null>(null);
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
+  const [previousConfirmations, setPreviousConfirmations] = useState<Confirmation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
   const { toast } = useToast();
@@ -28,12 +32,30 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        
+        // Fetch the latest game (current)
         const latestGame = await getLatestGame();
         
         if (latestGame) {
           setGame(latestGame);
           const gameConfirmations = await getConfirmations(latestGame.id);
           setConfirmations(gameConfirmations);
+          
+          // Fetch the previous game
+          const { data: previousGames } = await supabase
+            .from('games')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(2);
+            
+          if (previousGames && previousGames.length > 1) {
+            const prevGame = previousGames[1];
+            setPreviousGame(prevGame);
+            
+            // Fetch confirmations for the previous game
+            const prevGameConfirmations = await getConfirmations(prevGame.id);
+            setPreviousConfirmations(prevGameConfirmations);
+          }
         }
       } catch (error) {
         console.error("Error fetching game data:", error);
@@ -198,7 +220,7 @@ export default function HomePage() {
     >
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
-          <div className="bg-violet-50 dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="bg-violet-50 dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Próximo Jogo</h2>
             <div className="rounded-lg bg-white dark:bg-gray-700 p-4 shadow-sm">
               <div className="flex flex-col md:flex-row md:justify-between items-center mb-4">
@@ -260,9 +282,19 @@ export default function HomePage() {
               </Button>
             )}
           </div>
+          
+          {/* MVP Podium */}
+          {previousGame && (
+            <div className="bg-violet-50 dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">
+                MVP do Último Jogo
+              </h2>
+              <MvpPodium gameId={previousGame.id} />
+            </div>
+          )}
         </div>
 
-        <div>
+        <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">
               Jogadores Confirmados ({confirmations.length})
@@ -303,6 +335,20 @@ export default function HomePage() {
               </ul>
             )}
           </div>
+          
+          {/* MVP Voting */}
+          {previousGame && previousConfirmations.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">
+                Votação para MVP
+              </h2>
+              <MvpVoting 
+                gameId={previousGame.id} 
+                confirmations={previousConfirmations} 
+                currentUserId={user.id} 
+              />
+            </div>
+          )}
         </div>
       </div>
     </PageContainer>
