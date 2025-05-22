@@ -164,6 +164,44 @@ export type Database = {
         }
         Relationships: []
       }
+      mvp_votes: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          player_id: string
+          rank: number
+          username: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          player_id: string
+          rank: number
+          username: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          player_id?: string
+          rank?: number
+          username?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_votes_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number

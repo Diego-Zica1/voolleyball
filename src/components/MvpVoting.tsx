@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Confirmation } from "@/types";
+import { Confirmation, MvpVote } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -27,18 +27,38 @@ export function MvpVoting({ gameId, confirmations, currentUserId }: MvpVotingPro
   // Check if the user has already voted for this game
   useEffect(() => {
     const checkUserVoted = async () => {
-      const { data, error } = await supabase
-        .from('mvp_votes')
-        .select('*')
-        .eq('game_id', gameId)
-        .eq('voter_id', currentUserId);
+      try {
+        // We need to use raw SQL query via RPC since the table was just created
+        const { data: existingVotes, error } = await supabase
+          .rpc('check_user_votes', {
+            game_id_param: gameId,
+            voter_id_param: currentUserId
+          })
+          .single();
         
-      if (error) {
-        console.error("Error checking if user has voted:", error);
-        return;
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+          console.error("Error checking if user has voted:", error);
+          
+          // Fallback to direct query
+          const { data, error: directError } = await supabase
+            .from('mvp_votes')
+            .select('id')
+            .eq('game_id', gameId)
+            .eq('voter_id', currentUserId);
+            
+          if (directError) {
+            console.error("Direct query error:", directError);
+            return;
+          }
+          
+          setHasVoted(data && data.length > 0);
+        } else {
+          // If we got a result, user has voted
+          setHasVoted(!!existingVotes);
+        }
+      } catch (e) {
+        console.error("Error in vote check:", e);
       }
-      
-      setHasVoted(data && data.length > 0);
     };
     
     if (gameId && currentUserId) {
@@ -60,7 +80,7 @@ export function MvpVoting({ gameId, confirmations, currentUserId }: MvpVotingPro
       setIsSubmitting(true);
       
       // Prepare votes for insertion
-      const votes = [];
+      const votes: Array<Omit<MvpVote, 'id' | 'created_at'>> = [];
       
       if (firstPlace) {
         const player = confirmations.find(p => p.user_id === firstPlace);
@@ -101,12 +121,31 @@ export function MvpVoting({ gameId, confirmations, currentUserId }: MvpVotingPro
         }
       }
       
-      // Insert votes
-      const { error } = await supabase
-        .from('mvp_votes')
-        .insert(votes);
-      
-      if (error) throw error;
+      // Use raw SQL insertion via RPC
+      for (const vote of votes) {
+        const { error } = await supabase
+          .rpc('insert_mvp_vote', {
+            game_id_param: vote.game_id,
+            voter_id_param: vote.voter_id,
+            player_id_param: vote.player_id,
+            username_param: vote.username,
+            rank_param: vote.rank
+          });
+        
+        if (error) {
+          console.error("RPC insertion failed:", error);
+          
+          // Fallback to direct insert
+          const { error: insertError } = await supabase
+            .from('mvp_votes')
+            .insert(vote);
+            
+          if (insertError) {
+            console.error("Direct insert error:", insertError);
+            throw insertError;
+          }
+        }
+      }
       
       toast({
         title: "Voto registrado",

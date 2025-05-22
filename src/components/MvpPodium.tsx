@@ -22,56 +22,91 @@ export function MvpPodium({ gameId }: MvpPodiumProps) {
       try {
         setLoading(true);
         
+        // Since the table was just created, we need to use the raw query approach
         const { data, error } = await supabase
-          .from('mvp_votes')
-          .select('player_id, username, rank')
-          .eq('game_id', gameId);
-          
-        if (error) throw error;
-        
-        // Calculate score: rank 1 = 3 points, rank 2 = 2 points, rank 3 = 1 point
-        const playerScores = new Map<string, { username: string, score: number }>();
-        
-        data?.forEach(vote => {
-          const points = vote.rank === 1 ? 3 : vote.rank === 2 ? 2 : 1;
-          const player = playerScores.get(vote.player_id) || { username: vote.username, score: 0 };
-          player.score += points;
-          playerScores.set(vote.player_id, player);
-        });
-        
-        // Convert to array and sort by score
-        const sortedPlayers = Array.from(playerScores, ([_, player]) => player)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 3)
-          .map((player, index) => ({ ...player, position: index + 1 }));
-        
-        // Ensure we always have 3 positions even if there aren't enough votes
-        while (sortedPlayers.length < 3) {
-          sortedPlayers.push({ 
-            username: sortedPlayers.length === 0 ? "1º Lugar" : 
-                     sortedPlayers.length === 1 ? "2º Lugar" : "3º Lugar", 
-            score: 0,
-            position: sortedPlayers.length + 1
+          .rpc('get_mvp_votes_for_game', {
+            game_id_param: gameId
           });
+          
+        if (error) {
+          console.error("Error fetching MVP votes:", error);
+          // If RPC fails, try direct query as fallback
+          const { data: rawData, error: rawError } = await supabase
+            .from('mvp_votes')
+            .select('player_id, username, rank')
+            .eq('game_id', gameId);
+            
+          if (rawError) {
+            console.error("Fallback query also failed:", rawError);
+            throw rawError;
+          }
+          
+          // Process the raw data
+          const playerScores = processVotesData(rawData || []);
+          const sortedPlayers = sortAndLimitPlayers(playerScores);
+          setTopPlayers(sortedPlayers);
+        } else {
+          // Process the RPC data
+          const playerScores = processVotesData(data || []);
+          const sortedPlayers = sortAndLimitPlayers(playerScores);
+          setTopPlayers(sortedPlayers);
         }
-        
-        setTopPlayers(sortedPlayers);
       } catch (error) {
-        console.error("Error fetching MVP votes:", error);
+        console.error("Error in MVP votes processing:", error);
+        // Ensure we always have 3 placeholder positions even if there's an error
+        setTopPlayers([
+          { username: "1º Lugar", score: 0, position: 1 },
+          { username: "2º Lugar", score: 0, position: 2 },
+          { username: "3º Lugar", score: 0, position: 3 }
+        ]);
       } finally {
         setLoading(false);
       }
+    };
+    
+    // Helper function to process votes data
+    const processVotesData = (votes: any[]) => {
+      const playerScores = new Map<string, { username: string, score: number }>();
+      
+      votes.forEach(vote => {
+        const points = vote.rank === 1 ? 3 : vote.rank === 2 ? 2 : 1;
+        const player = playerScores.get(vote.player_id) || { username: vote.username, score: 0 };
+        player.score += points;
+        playerScores.set(vote.player_id, player);
+      });
+      
+      return playerScores;
+    };
+    
+    // Helper function to sort and limit players
+    const sortAndLimitPlayers = (playerScores: Map<string, { username: string, score: number }>) => {
+      const sortedPlayers = Array.from(playerScores, ([_, player]) => player)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map((player, index) => ({ ...player, position: index + 1 }));
+      
+      // Ensure we always have 3 positions even if there aren't enough votes
+      while (sortedPlayers.length < 3) {
+        sortedPlayers.push({ 
+          username: sortedPlayers.length === 0 ? "1º Lugar" : 
+                   sortedPlayers.length === 1 ? "2º Lugar" : "3º Lugar", 
+          score: 0,
+          position: sortedPlayers.length + 1
+        });
+      }
+      
+      return sortedPlayers;
     };
     
     if (gameId) {
       fetchVotes();
     }
     
-    // Set up realtime subscription to update podium when votes change
+    // Set up realtime subscription for vote changes
     const channel = supabase
-      .channel('mvp-podium-changes')
+      .channel('mvp-votes-changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'mvp_votes', filter: `game_id=eq.${gameId}` }, 
+        { event: '*', schema: 'public', table: 'mvp_votes' }, 
         () => {
           fetchVotes();
         }
