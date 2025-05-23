@@ -419,7 +419,7 @@ export default function ScoreboardPage() {
               
               {/* Botões para incrementar/decrementar (visíveis sempre) */}
               <div className="flex justify-center mt-6 gap-4">
-                <Button 
+                {/* <Button 
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); decrementScore('A'); }}
@@ -434,12 +434,12 @@ export default function ScoreboardPage() {
                   className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-purple' : 'bg-volleyball-purple hover:bg-volleyball-purple/80'}`}
                 >
                   <Plus className="h-5 w-5" />
-                </Button>
+                </Button> */}
                 <Button 
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('A'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-black text-white hover:bg-white hover:text-black' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
@@ -487,7 +487,7 @@ export default function ScoreboardPage() {
               
               {/* Botões para incrementar/decrementar (visíveis sempre) */}
               <div className="flex justify-center mt-6 gap-4">
-                <Button 
+                {/* <Button 
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); decrementScore('B'); }}
@@ -502,12 +502,12 @@ export default function ScoreboardPage() {
                   className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-green' : 'bg-volleyball-green hover:bg-volleyball-green/80'}`}
                 >
                   <Plus className="h-5 w-5" />
-                </Button>
+                </Button> */}
                 <Button 
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('B'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-white/20 hover:bg-white/30 text-white' : ''}`}
+                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-black text-white hover:bg-white hover:text-black' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>

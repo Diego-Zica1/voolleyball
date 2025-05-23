@@ -258,7 +258,7 @@ export default function TeamsPage() {
                     <SelectContent>
                       {unconfirmedPlayers.map(player => (
                         <SelectItem key={player.id} value={player.id}>
-                          {player.username} ({player.average_rating.toFixed(1)})
+                          {player.username} {/*({player.average_rating.toFixed(1)})*/}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -325,15 +325,16 @@ export default function TeamsPage() {
                 {confirmedPlayers.map(player => (
                   <li key={player.id} className="py-2 flex items-center justify-between">
                     <div className="flex items-center">
+                    <User size={16} className="mr-2 text-purple-500" />
                       <span className={absentPlayers.includes(player.id) ? 'line-through text-gray-400' : ''}>
-                        {player.username} ({player.average_rating.toFixed(1)})
+                        {player.username} {/*({player.average_rating.toFixed(1)})*/}
                       </span>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => removePlayerFromPool(player.id)}
-                      className={absentPlayers.includes(player.id) ? "text-green-500" : "text-red-500"}
+                      className={absentPlayers.includes(player.id) ? "text-gray bg-green-200 hover:bg-green-200/50 dark:text-green-500 dark:bg-black/90 dark:hover:bg-black/50" : "text-gray bg-purple-200 hover:bg-purple-200/50 dark:text-purple-500 dark:bg-black/90 dark:hover:bg-black/50"}
                     >
                       {absentPlayers.includes(player.id) ? "Incluir" : "Marcar Ausente"}
                     </Button>
@@ -357,14 +358,14 @@ export default function TeamsPage() {
                   .map(player => (
                     <li key={player.id} className="py-2 flex items-center justify-between">
                       <div className="flex items-center">
-                        <User size={16} className="mr-2 text-blue-500" />
-                        <span>{player.username} ({player.average_rating.toFixed(1)})</span>
+                        <User size={16} className="mr-2 text-purple-500" />
+                        <span>{player.username} {/*({player.average_rating.toFixed(1)})*/}</span>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setPlayerPool(prev => prev.filter(p => p.id !== player.id))}
-                        className="text-red-500"
+                        className="dark:text-green-500 dark:bg-black/90 dark:hover:bg-black/50"
                       >
                         Remover
                       </Button>
@@ -380,7 +381,7 @@ export default function TeamsPage() {
           <div key={team.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">{team.name}</h2>
-              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}`}>
+              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-white' : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-white'}`}>
                 Média: {team.average_rating.toFixed(1)}
               </div>
             </div>

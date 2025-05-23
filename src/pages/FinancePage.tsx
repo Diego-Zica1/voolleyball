@@ -478,7 +478,7 @@ export default function FinancePage() {
               Realize um resgate do saldo acumulado em caixa
             </p>
             
-            <div className="p-4 mb-4 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300">
+            <div className="p-4 mb-4 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300">
               <p className="text-lg font-semibold">Saldo disponível: {formatCurrency(currentBalance)}</p>
             </div>
 
