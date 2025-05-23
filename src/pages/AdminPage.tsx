@@ -19,7 +19,8 @@ import {
   updateScoreboardSettings
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, User2 } from "lucide-react";
+
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("controls");
@@ -43,7 +44,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "controls", label: "Controles de Administrador" },
+    { id: "controls", label: "Gerenciar Usuários" },
     { id: "payments", label: "Pagamentos Pendentes" },
     { id: "schedule", label: "Agendar Novo Jogo" },
     { id: "scoreboard", label: "Configurar Placar" }
@@ -275,8 +276,7 @@ export default function AdminPage() {
       </div>
 
       {activeTab === "controls" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Controles de Administrador</h2>        
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">      
           
           <div className="mt-8">
             <div className="flex justify-between items-center mb-4">
@@ -310,7 +310,7 @@ export default function AdminPage() {
                   {users.map(user => (
                     <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">                        
                           {user.username}
                         </div>
                       </td>

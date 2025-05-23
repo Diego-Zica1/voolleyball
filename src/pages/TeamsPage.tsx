@@ -365,7 +365,7 @@ export default function TeamsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setPlayerPool(prev => prev.filter(p => p.id !== player.id))}
-                        className="dark:text-green-500 dark:bg-black/90 dark:hover:bg-black/50"
+                        className="text-red-800 bg-red-200 hover:bg-red-200/50 dark:text-red-500 dark:bg-black/90 dark:hover:bg-black/50"
                       >
                         Remover
                       </Button>
@@ -389,9 +389,10 @@ export default function TeamsPage() {
             {team.players.length > 0 ? (
               <ul className="mt-4 space-y-2">
                 {team.players.map(player => (
-                  <li key={player.id} className="flex justify-between items-center py-2 border-b last:border-0">
+                  <li key={player.id} className="flex justify-left items-center py-2 border-b last:border-0">   
+                  <User size={16} className="mr-2 text-purple-500" />                 
                     <span>{player.username}</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">{player.average_rating.toFixed(1)}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400 px-4">{player.average_rating.toFixed(1)}</span>
                   </li>
                 ))}
               </ul>
