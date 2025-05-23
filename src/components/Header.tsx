@@ -32,8 +32,8 @@ export function Header() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <VolleyballIcon className="h-8 w-8 text-volleyball-purple" />
-            <h1 className="text-xl font-bold">Voolleyball</h1>
+            <VolleyballIcon className="h-8 w-8 text-volleyball-purple soft-bounce" />
+            <h1 className="text-xl font-bold">Vôolleyball</h1>
           </div>
 
           {/* Desktop Navigation */}
