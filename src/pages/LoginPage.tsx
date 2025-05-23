@@ -66,8 +66,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-2" size={64} />
-          <h1 className="text-2xl font-bold">Voolleyball</h1>
+          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-4 animate-bounce " size={64} />
+          <h1 className="text-2xl font-bold">Vôolleyball</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {isLogin ? "Entre para gerenciar seus jogos de vôlei" : "Crie uma conta para participar"}
           </p>
