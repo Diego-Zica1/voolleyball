@@ -256,11 +256,13 @@ export default function TeamsPage() {
                       <SelectValue placeholder="Selecionar jogador" />
                     </SelectTrigger>
                     <SelectContent>
-                      {unconfirmedPlayers.map(player => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.username} {/*({player.average_rating.toFixed(1)})*/}
-                        </SelectItem>
-                      ))}
+                      {unconfirmedPlayers
+                        .filter(player => !playerPool.some(p => p.id === player.id))
+                        .map(player => (
+                          <SelectItem key={player.id} value={player.id}>
+                            {player.username}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <Button 

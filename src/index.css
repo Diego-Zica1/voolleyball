@@ -133,3 +133,12 @@
 .volleyball-slider-track {
   @apply bg-volleyball-purple h-2 rounded-full;
 }
+/* Deixe o ícone do calendário azul */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(32%) sepia(80%) saturate(0%) hue-rotate(260deg);
+}
+
+/* Deixe o ícone do relógio verde */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(32%) sepia(80%) saturate(0%) hue-rotate(260deg);
+}

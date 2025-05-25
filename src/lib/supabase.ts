@@ -531,8 +531,8 @@ export const updateScoreboardSettings = async (settings: Partial<ScoreboardSetti
         .from('scoreboard_settings')
         .insert({
           ...settings,
-          team_a_color: settings.team_a_color || '#8B5CF6',
-          team_b_color: settings.team_b_color || '#10B981'
+          team_a_color: settings.team_a_color || '#000000',
+          team_b_color: settings.team_b_color || '#42bd00'
         });
       
       error = insertError;

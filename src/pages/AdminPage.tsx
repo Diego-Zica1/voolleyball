@@ -35,8 +35,8 @@ export default function AdminPage() {
   const [pendingPayments, setPendingPayments] = useState<Payment[]>([]);
   const [isApprovingPayment, setIsApprovingPayment] = useState<string | null>(null);
   const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
-  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
-  const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+  const [teamAColor, setTeamAColor] = useState("#000000"); // Default purple
+  const [teamBColor, setTeamBColor] = useState("#42bd00"); // Default green
   const [isSavingColors, setIsSavingColors] = useState(false);
   
   const { user } = useAuth();

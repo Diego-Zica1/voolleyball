@@ -18,8 +18,8 @@ export default function ScoreboardPage() {
   const [teamAScore, setTeamAScore] = useState(0);
   const [teamBScore, setTeamBScore] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [teamAColor, setTeamAColor] = useState("#8B5CF6"); // Default purple
-  const [teamBColor, setTeamBColor] = useState("#10B981"); // Default green
+  const [teamAColor, setTeamAColor] = useState("#000000"); // Default purple
+  const [teamBColor, setTeamBColor] = useState("#42bd00"); // Default green
   const [teamAName, setTeamAName] = useState("TIME A");
   const [teamBName, setTeamBName] = useState("TIME B");
   const [teamAFontColor, setTeamAFontColor] = useState("#FFFFFF");

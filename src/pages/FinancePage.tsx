@@ -23,7 +23,8 @@ export default function FinancePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   
-  const [paymentType, setPaymentType] = useState<"monthly" | "weekly">("monthly");
+  const [paymentType, setPaymentType] = useState<"monthly" | "weekly" | "custom">("monthly");
+  const [customAmount, setCustomAmount] = useState<number | "">("");
   const [receiptUrl, setReceiptUrl] = useState("");
   
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
@@ -100,7 +101,11 @@ export default function FinancePage() {
     try {
       setIsSubmitting(true);
       
-      const amount = paymentType === "monthly" ? settings.monthly_fee : settings.weekly_fee;
+      const amount = paymentType === "monthly"
+      ? settings.monthly_fee
+      : paymentType === "weekly"
+        ? settings.weekly_fee
+        : Number(customAmount) || 0;
       
       await addPayment({
         user_id: user.id,
@@ -358,7 +363,7 @@ export default function FinancePage() {
                           {new Date(payment.created_at).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap capitalize">
-                          {payment.payment_type === "monthly" ? "Mensalista" : "Avulso"}
+                        {payment.payment_type === "monthly" ? "Mensalista" : payment.payment_type === "weekly" ? "Diária" : payment.payment_type === "custom" ? "Outro Valor" : payment.payment_type}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {formatCurrency(payment.amount)}
@@ -404,16 +409,34 @@ export default function FinancePage() {
                 </label>
                 <Select 
                   value={paymentType} 
-                  onValueChange={(val) => setPaymentType(val as "monthly" | "weekly")}
+                  onValueChange={(val) => setPaymentType(val as "monthly" | "weekly" | "custom")}
                 >
                   <SelectTrigger id="paymentType">
                     <SelectValue placeholder="Selecione o tipo de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="monthly">Mensalista (R$ {settings?.monthly_fee.toFixed(2)})</SelectItem>
-                    <SelectItem value="weekly">Avulso (R$ {settings?.weekly_fee.toFixed(2)})</SelectItem>
+                    <SelectItem value="weekly">Diária (R$ {settings?.weekly_fee.toFixed(2)})</SelectItem>
+                    <SelectItem value="custom">Outro Valor</SelectItem>
                   </SelectContent>
                 </Select>
+                {paymentType === "custom" && (
+                  <div>
+                    <label htmlFor="customAmount" className="block text-sm font-medium mb-1 mt-4">
+                      Digite o valor desejado
+                    </label>
+                    <Input
+                      id="customAmount"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(Number(e.target.value))}
+                      placeholder="Ex: 50.00"
+                      required
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
