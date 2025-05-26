@@ -20,6 +20,8 @@ import {
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
 import { Loader2, RefreshCw, User2 } from "lucide-react";
+import { deleteUser } from "@/lib/supabase"; // Ajuste o caminho conforme necessário
+import { Trash2 } from "lucide-react";
 
 
 export default function AdminPage() {
@@ -37,6 +39,8 @@ export default function AdminPage() {
   const [isTogglingAdmin, setIsTogglingAdmin] = useState<string | null>(null);
   const [teamAColor, setTeamAColor] = useState("#000000"); // Default purple
   const [teamBColor, setTeamBColor] = useState("#42bd00"); // Default green
+  const [teamAName, setTeamAName] = useState("TIME A");
+  const [teamBName, setTeamBName] = useState("TIME B");
   const [isSavingColors, setIsSavingColors] = useState(false);
   
   const { user } = useAuth();
@@ -88,6 +92,8 @@ export default function AdminPage() {
         if (scoreboardSettings) {
           setTeamAColor(scoreboardSettings.team_a_color);
           setTeamBColor(scoreboardSettings.team_b_color);
+          setTeamAName(scoreboardSettings.team_a_name || "TIME A");
+          setTeamBName(scoreboardSettings.team_b_name || "TIME B");
         }
       } catch (error) {
         console.error("Error fetching admin data:", error);
@@ -175,6 +181,30 @@ export default function AdminPage() {
       setIsTogglingAdmin(null);
     }
   };
+
+  const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm("Tem certeza que deseja deletar este usuário?")) return;
+    try {
+      setIsDeletingUser(userId);
+      await deleteUser(userId);
+      setUsers(users.filter(u => u.id !== userId));
+      toast({
+        title: "Usuário deletado",
+        description: "O usuário foi removido com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      toast({
+        title: "Erro ao deletar usuário",
+        description: "Não foi possível remover o usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingUser(null);
+    }
+  };
   
   const handleApprovePayment = async (paymentId: string) => {
     try {
@@ -201,28 +231,30 @@ export default function AdminPage() {
     }
   };
   
-  const handleSaveScoreboardColors = async () => {
+  const handleSaveScoreboardSettings = async () => {
     try {
       setIsSavingColors(true);
       
       const success = await updateScoreboardSettings({
         team_a_color: teamAColor,
-        team_b_color: teamBColor
+        team_b_color: teamBColor,
+        team_a_name: teamAName,
+        team_b_name: teamBName,
       });
       
       if (success) {
         toast({
-          title: "Cores salvas",
-          description: "As cores do placar foram atualizadas com sucesso",
+          title: "Configurações salvas",
+          description: "As configurações do placar foram atualizadas com sucesso",
         });
       } else {
-        throw new Error("Failed to update colors");
+        throw new Error("Failed to update scoreboard settings");
       }
     } catch (error) {
-      console.error("Error saving scoreboard colors:", error);
+      console.error("Error saving scoreboard settings:", error);
       toast({
-        title: "Erro ao salvar cores",
-        description: "Não foi possível atualizar as cores do placar",
+        title: "Erro ao salvar configurações",
+        description: "Não foi possível atualizar as configurações do placar",
         variant: "destructive",
       });
     } finally {
@@ -304,6 +336,9 @@ export default function AdminPage() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Admin
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Deletar
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
@@ -330,6 +365,18 @@ export default function AdminPage() {
                             <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap flex items-center">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={isDeletingUser === user.id}
+                          className="ml-2"
+                          title="Deletar usuário"
+                        >
+                          <Trash2
+                            className={`h-5 w-5 ${isDeletingUser === user.id ? 'animate-spin text-gray-400' : 'text-red-600 hover:text-red-800'}`}
+                          />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -505,9 +552,23 @@ export default function AdminPage() {
 
       {activeTab === "scoreboard" && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Configurar Cores do Placar</h2>
+          <h2 className="text-xl font-semibold mb-4">Configurar Cores e Nomes do Placar</h2>
           
           <div className="space-y-6">
+            {/* Nome do Time A */}
+            <div>
+              <label htmlFor="teamAName" className="block text-sm font-medium mb-2">
+                Nome do Time A
+              </label>
+              <Input
+                id="teamAName"
+                type="text"
+                value={teamAName}
+                onChange={(e) => setTeamAName(e.target.value)}
+                className="w-48"
+              />
+            </div>
+            {/* Cor do Time A */}
             <div>
               <label htmlFor="teamAColor" className="block text-sm font-medium mb-2">
                 Cor do Time A
@@ -520,19 +581,29 @@ export default function AdminPage() {
                   onChange={(e) => setTeamAColor(e.target.value)}
                   className="w-20 h-10"
                 />
-                <Input 
-                  type="text" 
-                  value={teamAColor} 
+                <Input
+                  type="text"
+                  value={teamAColor}
                   onChange={(e) => setTeamAColor(e.target.value)}
                   className="w-32"
                 />
-                <div 
-                  className="w-20 h-10 rounded" 
-                  style={{ backgroundColor: teamAColor }}
-                ></div>
+                <div className="w-20 h-10 rounded" style={{ backgroundColor: teamAColor }}></div>
               </div>
             </div>
-            
+            {/* Nome do Time B */}
+            <div>
+              <label htmlFor="teamBName" className="block text-sm font-medium mb-2">
+                Nome do Time B
+              </label>
+              <Input
+                id="teamBName"
+                type="text"
+                value={teamBName}
+                onChange={(e) => setTeamBName(e.target.value)}
+                className="w-48"
+              />
+            </div>
+            {/* Cor do Time B */}
             <div>
               <label htmlFor="teamBColor" className="block text-sm font-medium mb-2">
                 Cor do Time B
@@ -545,39 +616,36 @@ export default function AdminPage() {
                   onChange={(e) => setTeamBColor(e.target.value)}
                   className="w-20 h-10"
                 />
-                <Input 
-                  type="text" 
-                  value={teamBColor} 
+                <Input
+                  type="text"
+                  value={teamBColor}
                   onChange={(e) => setTeamBColor(e.target.value)}
                   className="w-32"
                 />
-                <div 
-                  className="w-20 h-10 rounded" 
-                  style={{ backgroundColor: teamBColor }}
-                ></div>
+                <div className="w-20 h-10 rounded" style={{ backgroundColor: teamBColor }}></div>
               </div>
             </div>
-            
+            {/* Prévia do Placar */}
             <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-6">
               <h3 className="text-md font-medium mb-2">Prévia do Placar</h3>
               <div className="flex gap-4">
-                <div 
+                <div
                   className="flex-1 h-24 rounded flex items-center justify-center"
                   style={{ backgroundColor: teamAColor }}
                 >
-                  <span className="text-xl font-bold text-white">TIME A</span>
+                  <span className="text-xl font-bold text-white">{teamAName}</span>
                 </div>
-                <div 
+                <div
                   className="flex-1 h-24 rounded flex items-center justify-center"
                   style={{ backgroundColor: teamBColor }}
                 >
-                  <span className="text-xl font-bold text-white">TIME B</span>
+                  <span className="text-xl font-bold text-white">{teamBName}</span>
                 </div>
               </div>
             </div>
             
             <Button 
-              onClick={handleSaveScoreboardColors} 
+              onClick={handleSaveScoreboardSettings} 
               className="w-full mt-4"
               disabled={isSavingColors}
             >

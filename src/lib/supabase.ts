@@ -296,6 +296,24 @@ export const updateUserAdmin = async (userId: string, isAdmin: boolean): Promise
   }
 };
 
+export const deleteUser = async (userId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Erro ao deletar usuário:", error);
+      throw error;
+    }
+    console.log("Usuário deletado com sucesso");
+  } catch (error) {
+    console.error("Erro em deleteUser:", error);
+    throw error;
+  }
+};
+
 export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved'): Promise<any> => {
   try {
     console.log("Updating payment status:", paymentId, status);

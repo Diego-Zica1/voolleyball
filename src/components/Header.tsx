@@ -14,7 +14,8 @@ export function Header() {
 
   const navItems = [
     { name: "Home", path: "/" },
-    { name: "Atributos", path: "/atributos" },
+    // Só mostra "Atributos" para admin
+    ...(user?.isAdmin ? [{ name: "Atributos", path: "/atributos" }] : []),
     { name: "Times", path: "/times" },
     { name: "Contabilidade", path: "/contabilidade" },
     { name: "Placar", path: "/placar" },
