@@ -655,7 +655,7 @@ export default function AdminPage() {
                   Salvando...
                 </>
               ) : (
-                "Salvar Cores"
+                "Salvar Padrão do Placar"
               )}
             </Button>
           </div>

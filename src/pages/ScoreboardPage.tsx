@@ -1,4 +1,3 @@
-
 import React, { useRef, useState, useEffect, TouchEvent } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { ScoreboardMenu } from "@/components/ScoreboardMenu";
@@ -11,6 +10,7 @@ import { Header } from "@/components/Header";
 import { getScoreboardSettings, updateScoreboardSettings } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { ScoreboardSettings } from "@/types";
+import NoSleep from 'nosleep.js'; // <--- Adicione esta linha
 
 export default function ScoreboardPage() {
   const scoreboardRef = useRef<HTMLDivElement>(null);
@@ -18,8 +18,8 @@ export default function ScoreboardPage() {
   const [teamAScore, setTeamAScore] = useState(0);
   const [teamBScore, setTeamBScore] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [teamAColor, setTeamAColor] = useState("#000000"); // Default purple
-  const [teamBColor, setTeamBColor] = useState("#42bd00"); // Default green
+  const [teamAColor, setTeamAColor] = useState("#000000");
+  const [teamBColor, setTeamBColor] = useState("#42bd00");
   const [teamAName, setTeamAName] = useState("TIME A");
   const [teamBName, setTeamBName] = useState("TIME B");
   const [teamAFontColor, setTeamAFontColor] = useState("#FFFFFF");
@@ -29,9 +29,12 @@ export default function ScoreboardPage() {
   const [touchTeam, setTouchTeam] = useState<'A' | 'B' | null>(null);
   const [wasSwipe, setWasSwipe] = useState(false);
   const [swipeLocked, setSwipeLocked] = useState(false);
-  
+
   const { toast } = useToast();
   const swipeDetected = useRef(false);
+
+  // Referência para NoSleep
+  const noSleep = useRef<NoSleep | null>(null);
 
   useEffect(() => {
     // Get fullscreen state
@@ -47,20 +50,40 @@ export default function ScoreboardPage() {
       if (settings) {
         setTeamAColor(settings.team_a_color);
         setTeamBColor(settings.team_b_color);
-        
+
         if (settings.team_a_name) setTeamAName(settings.team_a_name);
         if (settings.team_b_name) setTeamBName(settings.team_b_name);
         if (settings.team_a_font_color) setTeamAFontColor(settings.team_a_font_color);
         if (settings.team_b_font_color) setTeamBFontColor(settings.team_b_font_color);
       }
     };
-    
+
     getSettings();
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  // Ativa/desativa o NoSleep ao entrar/sair do fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      if (!noSleep.current) noSleep.current = new NoSleep();
+      // O enable precisa ser chamado após interação do usuário
+      const enableNoSleep = () => {
+        noSleep.current?.enable();
+        document.removeEventListener('touchstart', enableNoSleep, false);
+        document.removeEventListener('click', enableNoSleep, false);
+      };
+      document.addEventListener('touchstart', enableNoSleep, false);
+      document.addEventListener('click', enableNoSleep, false);
+    } else {
+      noSleep.current?.disable();
+    }
+    return () => {
+      noSleep.current?.disable();
+    };
+  }, [isFullscreen]);
 
   const toggleControls = () => {
     setShowControls(!showControls);
@@ -81,7 +104,7 @@ export default function ScoreboardPage() {
       setTeamBScore(prev => Math.max(0, prev - 1));
     }
   };
-  
+
   const resetScore = (team: 'A' | 'B') => {
     if (team === 'A') {
       setTeamAScore(0);
@@ -127,7 +150,6 @@ export default function ScoreboardPage() {
     setTimeout(() => setWasSwipe(false), 100);
   };
 
-
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (isFullscreen && touchStartY !== null && touchTeam && !swipeLocked) {
       const currentY = e.touches[0].clientY;
@@ -148,11 +170,11 @@ export default function ScoreboardPage() {
       }
     }
   };
-  
+
   const saveSettings = async () => {
     try {
       setIsSaving(true);
-      
+
       const settings: Partial<ScoreboardSettings> = {
         team_a_color: teamAColor,
         team_b_color: teamBColor,
@@ -161,9 +183,9 @@ export default function ScoreboardPage() {
         team_a_font_color: teamAFontColor,
         team_b_font_color: teamBFontColor
       };
-      
+
       const success = await updateScoreboardSettings(settings);
-      
+
       if (success) {
         toast({
           title: "Configurações salvas",
@@ -189,37 +211,37 @@ export default function ScoreboardPage() {
         <h3 className="text-center py-2 bg-gray-100 dark:bg-gray-800 font-medium border-b">Preview do Placar</h3>
         <div className="flex flex-col md:flex-row">
           {/* Team A Preview */}
-          <div 
+          <div
             className="flex-1 p-4 flex flex-col items-center justify-center"
             style={{ backgroundColor: teamAColor }}
           >
-            <h2 
-              className="text-xl font-bold mb-2" 
+            <h2
+              className="text-xl font-bold mb-2"
               style={{ color: teamAFontColor }}
             >
               {teamAName}
             </h2>
-            <div 
-              className="text-5xl font-bold" 
+            <div
+              className="text-5xl font-bold"
               style={{ color: teamAFontColor }}
             >
               {teamAScore}
             </div>
           </div>
-          
+
           {/* Team B Preview */}
-          <div 
+          <div
             className="flex-1 p-4 flex flex-col items-center justify-center"
             style={{ backgroundColor: teamBColor }}
           >
-            <h2 
-              className="text-xl font-bold mb-2" 
+            <h2
+              className="text-xl font-bold mb-2"
               style={{ color: teamBFontColor }}
             >
               {teamBName}
             </h2>
-            <div 
-              className="text-5xl font-bold" 
+            <div
+              className="text-5xl font-bold"
               style={{ color: teamBFontColor }}
             >
               {teamBScore}
@@ -234,7 +256,7 @@ export default function ScoreboardPage() {
     <>
       {/* Site Header (visible only when not in fullscreen) */}
       {!isFullscreen && <Header />}
-      
+
       {/* Menu de controles (visível apenas quando não estiver em fullscreen ou quando showControls for true) */}
       {showControls && !isFullscreen && (
         <PageContainer title="Placar">
@@ -243,7 +265,7 @@ export default function ScoreboardPage() {
               Configure o placar conforme necessário. Clique no botão de tela cheia para exibir somente o placar.
             </p>
           </div>
-          
+
           {/* Configurações do placar */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow mb-8">
             <h2 className="text-xl font-semibold mb-4">Configurar Placar</h2>
@@ -266,8 +288,8 @@ export default function ScoreboardPage() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
-                          <div 
-                            className="w-5 h-5 rounded-sm mr-2" 
+                          <div
+                            className="w-5 h-5 rounded-sm mr-2"
                             style={{ backgroundColor: teamAColor }}
                           />
                           <span>{teamAColor}</span>
@@ -285,8 +307,8 @@ export default function ScoreboardPage() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
-                          <div 
-                            className="w-5 h-5 rounded-sm mr-2" 
+                          <div
+                            className="w-5 h-5 rounded-sm mr-2"
                             style={{ backgroundColor: teamAFontColor }}
                           />
                           <span>{teamAFontColor}</span>
@@ -299,7 +321,7 @@ export default function ScoreboardPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* Configurações Time B */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Time B</h3>
@@ -318,8 +340,8 @@ export default function ScoreboardPage() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
-                          <div 
-                            className="w-5 h-5 rounded-sm mr-2" 
+                          <div
+                            className="w-5 h-5 rounded-sm mr-2"
                             style={{ backgroundColor: teamBColor }}
                           />
                           <span>{teamBColor}</span>
@@ -337,8 +359,8 @@ export default function ScoreboardPage() {
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
-                          <div 
-                            className="w-5 h-5 rounded-sm mr-2" 
+                          <div
+                            className="w-5 h-5 rounded-sm mr-2"
                             style={{ backgroundColor: teamBFontColor }}
                           />
                           <span>{teamBFontColor}</span>
@@ -352,9 +374,9 @@ export default function ScoreboardPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6 text-right">
-              <Button 
+              <Button
                 onClick={saveSettings}
                 disabled={isSaving}
                 className="volleyball-button-primary"
@@ -362,15 +384,15 @@ export default function ScoreboardPage() {
                 {isSaving ? "Salvando..." : "Salvar Configurações"}
               </Button>
             </div>
-            
+
             {/* Scoreboard Preview */}
             {renderScoreboardPreview()}
           </div>
         </PageContainer>
       )}
-      
+
       {/* Placar principal (referenciado para o modo tela cheia) */}
-      <div 
+      <div
         ref={scoreboardRef}
         className={`${showControls && !isFullscreen ? 'mt-8 bg-volleyball-purple/5 p-8 rounded-lg w-full' : 'fixed inset-0 z-40 flex items-center justify-center'}`}
       >
@@ -379,10 +401,10 @@ export default function ScoreboardPage() {
             isFullscreen ? 'h-full' : 'gap-8'
           }`}>
             {/* Time A */}
-            <div 
+            <div
               className={`flex-1 ${
-                isFullscreen 
-                  ? 'h-full flex flex-col justify-center' 
+                isFullscreen
+                  ? 'h-full flex flex-col justify-center'
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
               }`}
               style={{
@@ -391,11 +413,10 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('A', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
-              
             >
               <h2 className={`no-select ${
-                isFullscreen 
-                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
+                isFullscreen
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center'
                   : 'text-2xl md:text-4xl font-bold mb-6'
               }`}
               style={{
@@ -404,10 +425,10 @@ export default function ScoreboardPage() {
               >
                 {teamAName}
               </h2>
-              <div 
+              <div
                 className={`no-select ${
-                  isFullscreen 
-                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                  isFullscreen
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center'
                     : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
                 }`}
                 style={{
@@ -416,26 +437,10 @@ export default function ScoreboardPage() {
               >
                 {teamAScore}
               </div>
-              
-              {/* Botões para incrementar/decrementar (visíveis sempre) */}
+
+              {/* Botões para resetar (visíveis sempre) */}
               <div className="flex justify-center mt-6 gap-4">
-                {/* <Button 
-                  variant="outline"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); decrementScore('A'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}
-                >
-                  <Minus className="h-5 w-5" />
-                </Button>
-                <Button 
-                  variant="default"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); incrementScore('A'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-purple' : 'bg-volleyball-purple hover:bg-volleyball-purple/80'}`}
-                >
-                  <Plus className="h-5 w-5" />
-                </Button> */}
-                <Button 
+                <Button
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('A'); }}
@@ -445,12 +450,12 @@ export default function ScoreboardPage() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Time B */}
-            <div 
+            <div
               className={`flex-1 ${
-                isFullscreen 
-                  ? 'h-full flex flex-col justify-center' 
+                isFullscreen
+                  ? 'h-full flex flex-col justify-center'
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
               }`}
               style={{
@@ -459,11 +464,10 @@ export default function ScoreboardPage() {
               onTouchStart={(e) => handleTouchStart('B', e)}
               onTouchEnd={handleTouchEnd}
               onTouchMove={handleTouchMove}
-              
             >
               <h2 className={`no-select ${
-                isFullscreen 
-                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
+                isFullscreen
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center'
                   : 'text-2xl md:text-4xl font-bold mb-6'
               }`}
               style={{
@@ -472,10 +476,10 @@ export default function ScoreboardPage() {
               >
                 {teamBName}
               </h2>
-              <div 
+              <div
                 className={`no-select ${
-                  isFullscreen 
-                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                  isFullscreen
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center'
                     : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
                 }`}
                 style={{
@@ -484,26 +488,10 @@ export default function ScoreboardPage() {
               >
                 {teamBScore}
               </div>
-              
-              {/* Botões para incrementar/decrementar (visíveis sempre) */}
+
+              {/* Botões para resetar (visíveis sempre) */}
               <div className="flex justify-center mt-6 gap-4">
-                {/* <Button 
-                  variant="outline"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); decrementScore('B'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}
-                >
-                  <Minus className="h-5 w-5" />
-                </Button>
-                <Button 
-                  variant="default"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); incrementScore('B'); }}
-                  className={`rounded-full ${isFullscreen ? 'bg-white hover:bg-white/80 text-volleyball-green' : 'bg-volleyball-green hover:bg-volleyball-green/80'}`}
-                >
-                  <Plus className="h-5 w-5" />
-                </Button> */}
-                <Button 
+                <Button
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('B'); }}
@@ -518,10 +506,9 @@ export default function ScoreboardPage() {
       </div>
 
       {/* Menu flutuante com botão de fullscreen */}
-      <ScoreboardMenu 
+      <ScoreboardMenu
         scoreboardRef={scoreboardRef}
       />
     </>
   );
 }
-
