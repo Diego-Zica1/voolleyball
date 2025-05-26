@@ -347,12 +347,12 @@ export default function FinancePage() {
             {userPayments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>Você ainda não realizou nenhum pagamento.</p>
-                <Button 
+                {/* <Button 
                   className="mt-4 volleyball-button-primary"
                   onClick={() => setActiveTab("payment")}
                 >
                   Realizar Pagamento
-                </Button>
+                </Button> */}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -366,13 +366,16 @@ export default function FinancePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {userPayments.map(payment => (
+                    {userPayments
+                      .slice()
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .map(payment => (
                       <tr key={payment.id}>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {new Date(payment.created_at).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap capitalize">
-                        {payment.payment_type === "monthly" ? "Mensalista" : payment.payment_type === "weekly" ? "Diária" : payment.payment_type === "custom" ? "Outro Valor" : payment.payment_type}
+                        {payment.payment_type === "monthly" ? "Mensalista" : payment.payment_type === "weekly" ? "Diária" : payment.payment_type === "custom" ? "Esporádico" : payment.payment_type}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {formatCurrency(payment.amount)}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Transaction } from "@/types";
 import { getTransactions, getAvailableMonths } from "@/lib/supabase";
@@ -24,7 +23,6 @@ export function TransactionsTab() {
         setSelectedMonth(months[0]);
       }
     };
-    
     loadMonths();
   }, []);
   
@@ -36,7 +34,6 @@ export function TransactionsTab() {
       setTotalPages(Math.ceil(count / itemsPerPage));
       setIsLoading(false);
     };
-    
     loadTransactions();
   }, [currentPage, selectedMonth]);
   
@@ -73,12 +70,25 @@ export function TransactionsTab() {
         <h2 className="text-xl font-semibold">Extrato de Transações</h2>
         
         <div className="w-64">
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          <Select
+            value={selectedMonth ?? "all"}
+            onValueChange={value => setSelectedMonth(value === "all" ? undefined : value)}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione um mês" />
+              <SelectValue
+                placeholder="Selecione um mês"
+                // Exibe "Todos os meses" quando for o valor "all"
+                children={
+                  selectedMonth === undefined
+                    ? "Todos os meses"
+                    : availableMonths.includes(selectedMonth)
+                    ? getMonthName(selectedMonth)
+                    : "Selecione um mês"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={undefined}>Todos os meses</SelectItem>
+              <SelectItem value="all">Todos os meses</SelectItem>
               {availableMonths.map(month => (
                 <SelectItem key={month} value={month}>
                   {getMonthName(month)}
