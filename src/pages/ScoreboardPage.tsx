@@ -380,7 +380,7 @@ export default function ScoreboardPage() {
           }`}>
             {/* Time A */}
             <div 
-              className={`flex-1 ${
+              className={`unselectable flex-1 ${
                 isFullscreen 
                   ? 'h-full flex flex-col justify-center' 
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
@@ -439,7 +439,7 @@ export default function ScoreboardPage() {
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('A'); }}
-                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-black text-white hover:bg-white hover:text-black' : ''}`}
+                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-white text-black hover:bg-white/80 hover:text-black/80' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>
@@ -448,7 +448,7 @@ export default function ScoreboardPage() {
             
             {/* Time B */}
             <div 
-              className={`flex-1 ${
+              className={`unselectable flex-1 ${
                 isFullscreen 
                   ? 'h-full flex flex-col justify-center' 
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
@@ -507,7 +507,7 @@ export default function ScoreboardPage() {
                   variant="outline"
                   size="icon"
                   onClick={(e) => { e.stopPropagation(); resetScore('B'); }}
-                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-black text-white hover:bg-white hover:text-black' : ''}`}
+                  className={`rounded-full w-20 border-0 ${isFullscreen ? 'bg-white text-black hover:bg-white/80 hover:text-black/80' : ''}`}
                 >
                   <RefreshCw className="h-5 w-5" />
                 </Button>

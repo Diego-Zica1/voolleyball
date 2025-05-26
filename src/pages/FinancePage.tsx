@@ -12,6 +12,7 @@ import { FinanceSettings, Payment, MonthlyBalance, CashWithdrawal } from "@/type
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsTab } from "@/components/TransactionsTab";
 
+
 export default function FinancePage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
@@ -259,6 +260,14 @@ export default function FinancePage() {
   const formatCurrency = (value: number) => {
     return `R$ ${value.toFixed(2)}`;
   };
+
+  const handleCopyPixKey = () => {
+    navigator.clipboard.writeText("06114573692");
+    toast({
+      title: "Chave Pix copiada!",
+      description: "A chave Pix foi copiada para a área de transferência.",
+    });
+  };
   
   const getCashBalanceColorClass = () => {
     if (currentBalance > 0) return "border-green-500 text-green-500";
@@ -466,15 +475,15 @@ export default function FinancePage() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">QR Code PIX</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <h2 className="text-xl font-semibold mb-4 flex items-center justify-center">QR Code PIX</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4 flex items-center justify-center">
               Escaneie o QR Code para realizar o pagamento
             </p>
 
             <div className="flex justify-center mb-4">
               {settings?.pix_qrcode ? (
                 <img 
-                  src={settings.pix_qrcode} 
+                  src="lovable-uploads/qrcodezica.jpeg" 
                   alt="QR Code PIX" 
                   className="max-w-full h-auto border p-2 bg-white" 
                   style={{ maxHeight: "240px" }}
@@ -486,8 +495,28 @@ export default function FinancePage() {
               )}
             </div>
 
+            <div className="flex items-center justify-center mt-4 mb-4">
+              <span className="text-green-600 font-semibold mr-2">Copiar Chave Pix</span>
+              <svg
+                className="w-5 h-5 text-green-600 cursor-pointer"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                onClick={handleCopyPixKey}
+                tabIndex={0}
+                role="button"
+              >
+                <title>Copiar chave Pix</title>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15V5a2 2 0 012-2h10" />
+              </svg>
+              <span className="sr-only">06114573692</span>
+            </div>
+
             <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              Após o pagamento, registre-o no formulário ao lado.
+              Após confirmar o pagamento, o Admin irá confirmar o recebimento.
             </p>
           </div>
         </div>

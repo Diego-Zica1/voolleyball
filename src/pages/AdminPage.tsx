@@ -433,18 +433,6 @@ export default function AdminPage() {
 
       {activeTab === "schedule" && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          
-          <div className="mb-6">
-            <p className="text-gray-600 dark:text-gray-400 mb-2">
-              Reset automático: sábado às 14:00
-            </p>
-            <Button 
-              onClick={handleResetConfirmations}
-              className="bg-red-500 hover:bg-red-600 text-white"
-            >
-              Resetar Confirmações Agora
-            </Button>
-          </div>
 
           <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
           

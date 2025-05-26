@@ -233,7 +233,7 @@ export default function TeamsPage() {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 dark:bg-gray-800">
                 <Switch
                   id="balanceBySkill"
                   checked={balanceBySkill}

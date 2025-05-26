@@ -71,7 +71,7 @@
     --destructive-foreground: 210 40% 98%;
 
     --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --input: 256 12% 40.2% / 0.3;
     --ring: 255 70% 65%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
@@ -132,4 +132,13 @@
 
 .volleyball-slider-track {
   @apply bg-volleyball-purple h-2 rounded-full;
-} 
+}
+/* Deixe o ícone do calendário azul */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(32%) sepia(80%) saturate(0%) hue-rotate(260deg);
+}
+
+/* Deixe o ícone do relógio verde */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(32%) sepia(80%) saturate(0%) hue-rotate(260deg);
+}
