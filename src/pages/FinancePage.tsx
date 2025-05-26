@@ -460,7 +460,7 @@ export default function FinancePage() {
                   placeholder="Cole o link da imagem do comprovante"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Você pode fazer upload da imagem em um serviço como Imgur e colar o link aqui.
+                  Você pode fazer upload da imagem em um serviço como Google Drive e colar o link aqui.
                 </p>
               </div>
 

@@ -117,7 +117,16 @@ export function TransactionsTab() {
                     {transactions.map((transaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>{formatDate(transaction.created_at)}</TableCell>
-                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>
+                          {transaction.description?.includes("monthly")
+                            ? "Mensalista"
+                            : transaction.description?.includes("weekly")
+                            ? "Diária"
+                            : transaction.description?.includes("custom")
+                            ? "Esporádico"
+                            : transaction.description
+                          }
+                        </TableCell>
                         <TableCell>{transaction.username}</TableCell>
                         <TableCell className={`text-right ${transaction.amount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                           {formatCurrency(transaction.amount)}
