@@ -380,10 +380,10 @@ export default function ScoreboardPage() {
           }`}>
             {/* Time A */}
             <div 
-              className={`flex-1 ${
+              className={`unselectable flex-1 ${
                 isFullscreen 
-                  ? 'unselectable h-full flex flex-col justify-center' 
-                  : 'unselectable bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+                  ? 'h-full flex flex-col justify-center' 
+                  : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
               }`}
               style={{
                 background: isFullscreen ? teamAColor : ''
@@ -395,8 +395,8 @@ export default function ScoreboardPage() {
             >
               <h2 className={`${
                 isFullscreen 
-                  ? 'unselectable text-4xl md:text-6xl font-bold mb-6 text-center' 
-                  : 'unselectable text-2xl md:text-4xl font-bold mb-6'
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
+                  : 'text-2xl md:text-4xl font-bold mb-6'
               }`}
               style={{
                 color: isFullscreen ? teamAFontColor : ''
@@ -407,8 +407,8 @@ export default function ScoreboardPage() {
               <div 
                 className={`${
                   isFullscreen 
-                    ? 'unselectable text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
-                    : 'unselectable text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                    : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
                 }`}
                 style={{
                   color: isFullscreen ? teamAFontColor : ''
@@ -448,10 +448,10 @@ export default function ScoreboardPage() {
             
             {/* Time B */}
             <div 
-              className={`flex-1 ${
+              className={`unselectable flex-1 ${
                 isFullscreen 
-                  ? 'unselectable h-full flex flex-col justify-center' 
-                  : 'unselectable bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
+                  ? 'h-full flex flex-col justify-center' 
+                  : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
               }`}
               style={{
                 background: isFullscreen ? teamBColor : ''
@@ -463,8 +463,8 @@ export default function ScoreboardPage() {
             >
               <h2 className={`${
                 isFullscreen 
-                  ? 'unselectable text-4xl md:text-6xl font-bold mb-6 text-center' 
-                  : 'unselectable text-2xl md:text-4xl font-bold mb-6'
+                  ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
+                  : 'text-2xl md:text-4xl font-bold mb-6'
               }`}
               style={{
                 color: isFullscreen ? teamBFontColor : ''
@@ -475,8 +475,8 @@ export default function ScoreboardPage() {
               <div 
                 className={`${
                   isFullscreen 
-                    ? 'unselectable text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
-                    : 'unselectable text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
+                    ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
+                    : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'
                 }`}
                 style={{
                   color: isFullscreen ? teamBFontColor : ''

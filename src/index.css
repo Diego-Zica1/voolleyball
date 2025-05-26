@@ -142,10 +142,3 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(32%) sepia(80%) saturate(0%) hue-rotate(260deg);
 }
-.unselectable {
-  -webkit-user-select: none; /* Safari */
-  -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* Internet Explorer/Edge */
-  user-select: none;         /* Padrão */
-  -webkit-touch-callout: none; /* iOS Safari: previne menu de contexto */
-}
