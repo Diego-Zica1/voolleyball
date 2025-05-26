@@ -141,7 +141,7 @@ export default function TeamsPage() {
       for (let i = 1; i <= numberOfTeams; i++) {
         generatedTeams.push({
           id: i,
-          name: `Time ${i}`,
+          name: `Seleção ${i}`,
           players: [],
           average_rating: 0
         });
@@ -394,7 +394,7 @@ export default function TeamsPage() {
                   <li key={player.id} className="flex justify-left items-center py-2 border-b last:border-0">   
                   <User size={16} className="mr-2 text-purple-500" />                 
                     <span>{player.username}</span>
-                    <span className="text-sm text-gray-600 dark:text-gray-400 px-4">{player.average_rating.toFixed(1)}</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400 px-4"></span>
                   </li>
                 ))}
               </ul>
