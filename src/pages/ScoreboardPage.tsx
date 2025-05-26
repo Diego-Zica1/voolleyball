@@ -380,7 +380,7 @@ export default function ScoreboardPage() {
           }`}>
             {/* Time A */}
             <div 
-              className={`unselectable flex-1 ${
+              className={`flex-1 ${
                 isFullscreen 
                   ? 'h-full flex flex-col justify-center' 
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
@@ -393,7 +393,7 @@ export default function ScoreboardPage() {
               onTouchMove={handleTouchMove}
               
             >
-              <h2 className={`${
+              <h2 className={`no-select ${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
                   : 'text-2xl md:text-4xl font-bold mb-6'
@@ -405,7 +405,7 @@ export default function ScoreboardPage() {
                 {teamAName}
               </h2>
               <div 
-                className={`${
+                className={`no-select ${
                   isFullscreen 
                     ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
                     : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-purple'
@@ -448,7 +448,7 @@ export default function ScoreboardPage() {
             
             {/* Time B */}
             <div 
-              className={`unselectable flex-1 ${
+              className={`flex-1 ${
                 isFullscreen 
                   ? 'h-full flex flex-col justify-center' 
                   : 'bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg text-center relative'
@@ -461,7 +461,7 @@ export default function ScoreboardPage() {
               onTouchMove={handleTouchMove}
               
             >
-              <h2 className={`${
+              <h2 className={`no-select ${
                 isFullscreen 
                   ? 'text-4xl md:text-6xl font-bold mb-6 text-center' 
                   : 'text-2xl md:text-4xl font-bold mb-6'
@@ -473,7 +473,7 @@ export default function ScoreboardPage() {
                 {teamBName}
               </h2>
               <div 
-                className={`${
+                className={`no-select ${
                   isFullscreen 
                     ? 'text-9xl md:text-[12rem] xl:text-[15rem] font-bold text-center' 
                     : 'text-6xl md:text-8xl xl:text-9xl font-bold text-volleyball-green'

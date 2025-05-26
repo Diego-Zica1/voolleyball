@@ -41,10 +41,11 @@
   color: #888;
 }
 
-.unselectable {
-  -webkit-user-select: none; /* Safari */
+.no-select {
+  -webkit-user-select: none; /* Safari, Chrome, Opera, Samsung */
+  -khtml-user-select: none;  /* Konqueror HTML */
   -moz-user-select: none;    /* Firefox */
-  -ms-user-select: none;     /* Internet Explorer/Edge */
+  -ms-user-select: none;     /* Edge, IE */
   user-select: none;         /* Padrão */
-  -webkit-touch-callout: none; /* iOS Safari: previne menu de contexto */
+  -webkit-touch-callout: none; /* iOS Safari */
 }
