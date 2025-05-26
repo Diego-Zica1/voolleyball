@@ -99,12 +99,17 @@ export default {
 				bounce: {
 					'0%, 100%': { transform: 'translateY(0)' },
 					'50%': { transform: 'translateY(20px)' },
+				},
+				'bounce-soft': {
+				'0%':   { transform: 'translateY(0) rotate(0deg)' },
+				'100%': { transform: 'translateY(0) rotate(360deg)' },
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				bounce: 'bounce 1s infinite'
+				'bounce': 'bounce 1s infinite',
+				'bounce-soft': 'bounce-soft 1s infinite cubic-bezier(0.45, 0, 0.55, 1)',
 			}
 		}
 	},

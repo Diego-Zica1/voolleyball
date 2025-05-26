@@ -32,9 +32,11 @@ export function Header() {
     <header className="border-b bg-white dark:bg-gray-900 shadow-sm">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <VolleyballIcon className="h-8 w-8 text-volleyball-purple soft-bounce" />
-            <h1 className="text-xl font-bold">Vôolleyball</h1>
+          <div className="flex items-center space-x-2">            
+            <Link to="http://voolleyball.lovable.app/" className="flex items-center space-x-2 cursor-pointer">
+            <VolleyballIcon className="h-10 w-10 text-volleyball-purple animate-bounce-soft" />
+            <h1 className="text-[1.6rem] font-bold">Vôolleyball</h1>
+          </Link>
           </div>
 
           {/* Desktop Navigation */}
