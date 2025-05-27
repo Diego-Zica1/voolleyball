@@ -129,7 +129,7 @@ export function TransactionsTab() {
                         <TableCell>{formatDate(transaction.created_at)}</TableCell>
                         <TableCell>
                           {transaction.description?.includes("monthly")
-                            ? "Mensalista"
+                            ? "Mensalidade"
                             : transaction.description?.includes("weekly")
                             ? "Diária"
                             : transaction.description?.includes("custom")

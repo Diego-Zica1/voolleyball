@@ -314,7 +314,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
   }
 };
 
-export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved'): Promise<any> => {
+export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved' | 'rejected'): Promise<any> => {
   try {
     console.log("Updating payment status:", paymentId, status);
     const { data, error } = await supabase

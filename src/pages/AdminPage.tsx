@@ -42,6 +42,8 @@ export default function AdminPage() {
   const [teamAName, setTeamAName] = useState("TIME A");
   const [teamBName, setTeamBName] = useState("TIME B");
   const [isSavingColors, setIsSavingColors] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
+  const [isRejectingPayment, setIsRejectingPayment] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -146,15 +148,15 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetConfirmations = async () => {
-    if (!latestGame) return;
+  // const handleResetConfirmations = async () => {
+  //   if (!latestGame) return;
     
-    // This would reset confirmations in a real app
-    toast({
-      title: "Confirmações resetadas",
-      description: "Todas as confirmações foram resetadas com sucesso",
-    });
-  };
+  //   // This would reset confirmations in a real app
+  //   toast({
+  //     title: "Confirmações resetadas",
+  //     description: "Todas as confirmações foram resetadas com sucesso",
+  //   });
+  // };
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
@@ -181,8 +183,6 @@ export default function AdminPage() {
       setIsTogglingAdmin(null);
     }
   };
-
-  const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
 
   const handleDeleteUser = async (userId: string) => {
     if (!window.confirm("Tem certeza que deseja deletar este usuário?")) return;
@@ -228,6 +228,31 @@ export default function AdminPage() {
       });
     } finally {
       setIsApprovingPayment(null);
+    }
+  };
+
+  const handleRejectPayment = async (paymentId: string) => {
+    try {
+      setIsRejectingPayment(paymentId);
+  
+      await updatePaymentStatus(paymentId, 'rejected');
+  
+      setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
+  
+      toast({
+        title: "Pagamento reprovado",
+        description: "O pagamento foi reprovado com sucesso",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Error rejecting payment:", error);
+      toast({
+        title: "Erro ao reprovar pagamento",
+        description: "Não foi possível reprovar o pagamento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRejectingPayment(null);
     }
   };
   
@@ -459,16 +484,26 @@ export default function AdminPage() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap flex gap-2">
                         <Button
                           onClick={() => handleApprovePayment(payment.id)}
-                          disabled={isApprovingPayment === payment.id}
+                          disabled={isApprovingPayment === payment.id || isRejectingPayment === payment.id}
                           className="bg-volleyball-green hover:bg-volleyball-green/90 text-white text-xs py-1"
                           size="sm"
                         >
                           {isApprovingPayment === payment.id ? 'Aprovando...' : 'Aprovar'}
                         </Button>
+                        <Button
+                          onClick={() => handleRejectPayment(payment.id)}
+                          disabled={isRejectingPayment === payment.id || isApprovingPayment === payment.id}
+                          className="bg-red-600 hover:bg-red-700 text-white text-xs py-1"
+                          size="sm"
+                          variant="destructive"
+                        >
+                          {isRejectingPayment === payment.id ? 'Reprovando...' : 'Reprovar'}
+                        </Button>
                       </td>
+
                     </tr>
                   ))}
                 </tbody>
