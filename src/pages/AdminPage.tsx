@@ -454,8 +454,22 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                          {payment.payment_type === 'monthly' ? 'Mensal' : 'Semanal'}
+                        <span
+                          className={`
+                            px-2 py-1 text-xs font-semibold rounded-md min-w-24
+                            ${payment.payment_type === 'monthly'    ? 'bg-green-100 text-green-800 dark:bg-green-600 dark:text-green-100'
+                              : payment.payment_type === 'weekly'     ? 'bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-blue-100'
+                              : payment.payment_type === 'custom'  ? 'bg-orange-100 text-orange-800 dark:bg-orange-600 dark:text-orange-100'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'}
+                          `}
+                        >
+                          {payment.payment_type === 'monthly'
+                            ? 'Mensalidade'
+                            : payment.payment_type === 'weekly'
+                              ? 'Diária'
+                              : payment.payment_type === 'custom'
+                                ? 'Esporádico'
+                                : 'Outro'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
