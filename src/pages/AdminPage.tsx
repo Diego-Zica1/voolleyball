@@ -20,8 +20,8 @@ import {
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
 import { Loader2, RefreshCw, User2 } from "lucide-react";
-import { deleteUser } from "@/lib/supabase"; // Ajuste o caminho conforme necessário
-import { Trash2 } from "lucide-react";
+import { deleteUser, banUser } from "@/lib/supabase"; // Ajuste o caminho conforme necessário
+import { Trash2, Ban } from "lucide-react";
 
 
 export default function AdminPage() {
@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [teamAName, setTeamAName] = useState("TIME A");
   const [teamBName, setTeamBName] = useState("TIME B");
   const [isSavingColors, setIsSavingColors] = useState(false);
+  const [isRejectingPayment, setIsRejectingPayment] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -146,15 +147,15 @@ export default function AdminPage() {
     }
   };
 
-  const handleResetConfirmations = async () => {
-    if (!latestGame) return;
+  // const handleResetConfirmations = async () => {
+  //   if (!latestGame) return;
     
-    // This would reset confirmations in a real app
-    toast({
-      title: "Confirmações resetadas",
-      description: "Todas as confirmações foram resetadas com sucesso",
-    });
-  };
+  //   // This would reset confirmations in a real app
+  //   toast({
+  //     title: "Confirmações resetadas",
+  //     description: "Todas as confirmações foram resetadas com sucesso",
+  //   });
+  // };
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
@@ -205,6 +206,31 @@ export default function AdminPage() {
       setIsDeletingUser(null);
     }
   };
+
+  const [isBanningUser, setIsBanningUser] = useState<string | null>(null);
+
+  const handleBanUser = async (userId: string) => {
+    if (!window.confirm("Tem certeza que deseja banir este usuário?")) return;
+    try {
+      setIsBanningUser(userId);
+      await banUser(userId);
+      setUsers(users.map(u => u.id === userId ? { ...u, banned: true } : u));
+      toast({
+        title: "Usuário banido",
+        description: "O usuário foi banido com sucesso.",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Erro ao banir usuário:", error);
+      toast({
+        title: "Erro ao banir usuário",
+        description: "Não foi possível banir o usuário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBanningUser(null);
+    }
+  };
   
   const handleApprovePayment = async (paymentId: string) => {
     try {
@@ -228,6 +254,31 @@ export default function AdminPage() {
       });
     } finally {
       setIsApprovingPayment(null);
+    }
+  };
+
+  const handleRejectPayment = async (paymentId: string) => {
+    try {
+      setIsRejectingPayment(paymentId);
+  
+      await updatePaymentStatus(paymentId, 'rejected');
+  
+      setPendingPayments(pendingPayments.filter(p => p.id !== paymentId));
+  
+      toast({
+        title: "Pagamento reprovado",
+        description: "O pagamento foi reprovado com sucesso",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error("Error rejecting payment:", error);
+      toast({
+        title: "Erro ao reprovar pagamento",
+        description: "Não foi possível reprovar o pagamento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRejectingPayment(null);
     }
   };
   
@@ -339,6 +390,9 @@ export default function AdminPage() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Deletar
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Banir
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
@@ -366,18 +420,40 @@ export default function AdminPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap flex items-center">
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={isDeletingUser === user.id}
-                          className="ml-2"
-                          title="Deletar usuário"
-                        >
-                          <Trash2
-                            className={`h-5 w-5 ${isDeletingUser === user.id ? 'animate-spin text-gray-400' : 'text-red-600 hover:text-red-800'}`}
-                          />
-                        </button>
-                      </td>
+                      <td className="px-3 py-4 whitespace-nowrap w-16">
+            <div className="flex items-center justify-center">
+              <button
+                onClick={() => handleDeleteUser(user.id)}
+                disabled={isDeletingUser === user.id}
+                className="ml-1"
+                title="Deletar usuário"
+              >
+                <Trash2
+                  className={`h-5 w-5 ${isDeletingUser === user.id ? 'animate-spin text-gray-400' : 'text-red-600 hover:text-red-800'}`}
+                />
+              </button>
+            </div>
+          </td>
+          <td className="px-3 py-4 whitespace-nowrap w-16">
+            <div className="flex items-center justify-center">
+              <button
+                onClick={() => handleBanUser(user.id)}
+                disabled={isBanningUser === user.id || user.banned}
+                className="ml-1"
+                title={user.banned ? "Usuário já banido" : "Banir usuário"}
+              >
+                <Ban
+                  className={`h-5 w-5 ${
+                    user.banned
+                      ? 'text-gray-400'
+                      : isBanningUser === user.id
+                        ? 'animate-spin text-gray-400'
+                        : 'text-orange-600 hover:text-orange-800'
+                  }`}
+                />
+              </button>
+            </div>
+          </td>
                     </tr>
                   ))}
                 </tbody>
@@ -397,83 +473,72 @@ export default function AdminPage() {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Usuário
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipo
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Comprovante
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                  {pendingPayments.map(payment => (
-                    <tr key={payment.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-200">
-                          {payment.username}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                          {payment.payment_type === 'monthly' ? 'Mensal' : 'Semanal'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-gray-200">
-                          R$ {payment.amount.toFixed(2)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(payment.created_at).toLocaleDateString('pt-BR')}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {payment.receipt_url ? (
-                          <a 
-                            href={payment.receipt_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-volleyball-purple hover:text-volleyball-purple-600 text-sm"
-                          >
-                            Ver comprovante
-                          </a>
-                        ) : (
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            Sem comprovante
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Button
-                          onClick={() => handleApprovePayment(payment.id)}
-                          disabled={isApprovingPayment === payment.id}
-                          className="bg-volleyball-green hover:bg-volleyball-green/90 text-white text-xs py-1"
-                          size="sm"
-                        >
-                          {isApprovingPayment === payment.id ? 'Aprovando...' : 'Aprovar'}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <thead className="bg-gray-50 dark:bg-gray-800">
+      <tr>
+        <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuário</th>
+        <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+        <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin</th>
+        <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Deletar</th>
+        <th className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Banir</th>
+      </tr>
+    </thead>
+    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+      {users.map(user => (
+        <tr key={user.id}>
+          <td className="px-2 py-4 whitespace-nowrap">
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-200">{user.username}</div>
+          </td>
+          <td className="px-2 py-4 whitespace-nowrap">
+            <div className="text-sm text-gray-500 dark:text-gray-400">{user.email}</div>
+          </td>
+          <td className="px-2 py-4 whitespace-nowrap">
+            <div className="flex items-center">
+              <Switch 
+                checked={user.isAdmin}
+                onCheckedChange={(checked) => toggleUserAdmin(user.id, checked)}
+                disabled={isTogglingAdmin === user.id}
+              />
+              {isTogglingAdmin === user.id && (
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              )}
             </div>
+          </td>
+          <td className="px-2 py-4 whitespace-nowrap w-12">
+            <button
+              onClick={() => handleDeleteUser(user.id)}
+              disabled={isDeletingUser === user.id}
+              className="ml-1"
+              title="Deletar usuário"
+            >
+              <Trash2
+                className={`h-5 w-5 ${isDeletingUser === user.id ? 'animate-spin text-gray-400' : 'text-red-600 hover:text-red-800'}`}
+              />
+            </button>
+          </td>
+          <td className="px-2 py-4 whitespace-nowrap w-12">
+            <button
+              onClick={() => handleBanUser(user.id)}
+              disabled={isBanningUser === user.id || user.banned}
+              className="ml-1"
+              title={user.banned ? "Usuário já banido" : "Banir usuário"}
+            >
+              <Ban
+                className={`h-5 w-5 ${
+                  user.banned
+                    ? 'text-gray-400'
+                    : isBanningUser === user.id
+                      ? 'animate-spin text-gray-400'
+                      : 'text-purple-600 hover:text-purple-800'
+                }`}
+              />
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
           )}
         </div>
       )}
