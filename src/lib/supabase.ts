@@ -314,25 +314,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
   }
 };
 
-export const banUser = async (userId: string): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ banned: true })
-      .eq('id', userId);
-
-    if (error) {
-      console.error("Erro ao banir usuário:", error);
-      throw error;
-    }
-    console.log("Usuário banido com sucesso");
-  } catch (error) {
-    console.error("Erro em banUser:", error);
-    throw error;
-  }
-};
-
-export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved' | 'rejected'): Promise<any> => {
+export const updatePaymentStatus = async (paymentId: string, status: 'pending' | 'approved'): Promise<any> => {
   try {
     console.log("Updating payment status:", paymentId, status);
     const { data, error } = await supabase

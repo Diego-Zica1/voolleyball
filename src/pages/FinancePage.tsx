@@ -375,25 +375,19 @@ export default function FinancePage() {
                           {new Date(payment.created_at).toLocaleDateString('pt-BR')}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap capitalize">
-                        {payment.payment_type === "monthly" ? "Mensalidade" : payment.payment_type === "weekly" ? "Diária" : payment.payment_type === "custom" ? "Esporádico" : payment.payment_type}
+                        {payment.payment_type === "monthly" ? "Mensalista" : payment.payment_type === "weekly" ? "Diária" : payment.payment_type === "custom" ? "Esporádico" : payment.payment_type}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {formatCurrency(payment.amount)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          payment.status === "approved"
-                            ? "bg-green-100 text-green-800"
-                            : payment.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                        }`}>
-                          {payment.status === "approved"
-                            ? "Aprovado"
-                            : payment.status === "pending"
-                              ? "Pendente"
-                              : "Reprovado"}
-                        </span>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            payment.status === "approved" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}>
+                            {payment.status === "approved" ? "Aprovado" : "Pendente"}
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -433,7 +427,7 @@ export default function FinancePage() {
                     <SelectValue placeholder="Selecione o tipo de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="monthly">Mensalidade (R$ {settings?.monthly_fee.toFixed(2)})</SelectItem>
+                    <SelectItem value="monthly">Mensalista (R$ {settings?.monthly_fee.toFixed(2)})</SelectItem>
                     <SelectItem value="weekly">Diária (R$ {settings?.weekly_fee.toFixed(2)})</SelectItem>
                     <SelectItem value="custom">Outro Valor</SelectItem>
                   </SelectContent>

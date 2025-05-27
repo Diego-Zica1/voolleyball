@@ -233,7 +233,7 @@ export default function HomePage() {
                     </a>
                   </Button>
                 </div>
-                <p className="text-gray-600 dark:text-gray-200 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {confirmations.length} confirmados de {game.max_players} vagas
                 </p>
               </div>

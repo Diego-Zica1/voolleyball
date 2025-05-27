@@ -4,7 +4,6 @@ export interface User {
   email: string;
   isAdmin: boolean;
   created_at: string;
-  banned?: boolean;
 }
 
 export interface Player {
