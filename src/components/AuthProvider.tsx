@@ -15,6 +15,7 @@ type AuthProviderState = {
   signUp: (email: string, password: string, username: string) => Promise<{ error?: { message: string } }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<{ error?: { message: string } }>;
+  resetPassword: (email: string) => Promise<{ error?: { message: string } }>;
 };
 
 const AuthContext = createContext<AuthProviderState | undefined>(undefined);
@@ -24,16 +25,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
-  // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
         setIsLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (session?.user) {
-          console.log("Session found, fetching user profile...");
-          // Fetch user data from profiles to check if admin
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -41,7 +39,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
             .single();
 
           if (profileError) {
-            console.error("Error fetching profile:", profileError);
             setUser(null);
             return;
           }
@@ -54,41 +51,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
               isAdmin: profileData.is_admin,
               created_at: profileData.created_at
             });
-            console.log("User profile fetched successfully:", profileData);
           } else {
-            console.error("No profile found for user:", session.user.id);
             setUser(null);
           }
         } else {
-          console.log("No active session found");
           setUser(null);
         }
       } catch (error) {
-        console.error('Error checking auth session:', error);
         setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Populate test data if needed
     const initializeTestData = async () => {
       try {
         await populateTestData();
-      } catch (error) {
-        console.error("Error initializing test data:", error);
-      }
+      } catch (error) {}
     };
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event);
         if (session?.user) {
-          // Only perform synchronous operations in the callback
           setIsLoading(true);
-          
-          // Use setTimeout to avoid potential deadlocks with Supabase client
           setTimeout(async () => {
             try {
               const { data: profileData, error: profileError } = await supabase
@@ -98,13 +83,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 .single();
 
               if (profileError) {
-                console.error("Error fetching profile on auth change:", profileError);
                 setUser(null);
                 return;
               }
 
               if (profileData) {
-                console.log("Profile fetched on auth change:", profileData);
                 setUser({
                   id: session.user.id,
                   email: session.user.email || '',
@@ -113,11 +96,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
                   created_at: profileData.created_at
                 });
               } else {
-                console.error("No profile found on auth change");
                 setUser(null);
               }
             } catch (error) {
-              console.error('Error fetching user profile:', error);
               setUser(null);
             } finally {
               setIsLoading(false);
@@ -140,26 +121,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting to sign in:", email);
       const { data, error } = await supabase.auth.signInWithPassword({ 
         email, 
         password 
       });
-      
+
       if (error) {
-        console.error("Sign in error:", error);
         throw error;
       }
 
-      console.log("Sign in successful:", data);
       toast({
         title: "Login bem-sucedido",
         description: "Você foi conectado com sucesso.",
       });
-      
+
       return {};
     } catch (error: any) {
-      console.error('Error signing in:', error);
       toast({
         title: "Erro no login",
         description: error.message || "Falha no login",
@@ -177,9 +154,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           redirectTo: window.location.origin
         }
       });
-      
+
       if (error) {
-        console.error("Google sign in error:", error);
         toast({
           title: "Erro no login com Google",
           description: error.message || "Falha no login com Google",
@@ -187,10 +163,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         throw error;
       }
-      
+
       return {};
     } catch (error: any) {
-      console.error('Error signing in with Google:', error);
       toast({
         title: "Erro no login com Google",
         description: error.message || "Falha no login com Google",
@@ -202,7 +177,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      console.log("Attempting to sign up:", email, username);
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -210,21 +184,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           data: { username }
         }
       });
-      
+
       if (error) {
-        console.error("Sign up error:", error);
         throw error;
       }
 
-      console.log("Sign up successful:", data);
       toast({
         title: "Cadastro bem-sucedido",
         description: "Sua conta foi criada com sucesso.",
       });
-      
+
       return {};
     } catch (error: any) {
-      console.error('Error signing up:', error);
       toast({
         title: "Erro no cadastro",
         description: error.message || "Falha no cadastro",
@@ -243,7 +214,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         description: "Você foi desconectado com sucesso.",
       });
     } catch (error) {
-      console.error('Error signing out:', error);
       toast({
         title: "Erro ao sair",
         description: "Não foi possível desconectar. Tente novamente.",
@@ -252,8 +222,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // NOVO MÉTODO: RESET PASSWORD
+  const resetPassword = async (email: string) => {
+    try {
+      // Troque a URL abaixo para a página de reset de senha do seu app
+      const redirectTo = typeof window !== "undefined"
+        ? `${window.location.origin}/resetpassword`
+        : "https://voolleyball.lovable.app/resetpassword";
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email enviado!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        variant: "default",
+      });
+
+      return {};
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar email",
+        description: error.message || "Erro ao solicitar recuperação de senha.",
+        variant: "destructive",
+      });
+      return { error: { message: error.message || "Erro ao solicitar recuperação de senha." } };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, signInWithGoogle, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
@@ -261,10 +264,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
-  
+
   return context;
 };
