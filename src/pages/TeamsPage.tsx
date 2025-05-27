@@ -277,9 +277,9 @@ export default function TeamsPage() {
               </div>
               
               {/* Jogadores ausentes */}
-              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-md font-semibold mb-3">Jogadores confirmados ausentes</h3>
-                {absentPlayers.length > 0 ? (
+              {absentPlayers.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-md font-semibold mb-3">Jogadores confirmados ausentes</h3>
                   <ul className="space-y-1">
                     {absentPlayers.map(playerId => {
                       const player = confirmedPlayers.find(p => p.id === playerId);
@@ -297,12 +297,15 @@ export default function TeamsPage() {
                       ) : null;
                     })}
                   </ul>
-                ) : (
+                </div>
+              )}
+              {confirmedPlayers.length === 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Todos os jogadores confirmados estão presentes
+                    Nenhum jogador confirmado para este jogo!
                   </p>
-                )}
-              </div>
+                </div>
+              )}
 
               <Button 
                 onClick={sortTeams}
