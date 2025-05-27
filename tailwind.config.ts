@@ -109,7 +109,7 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'bounce': 'bounce 1s infinite',
-				'bounce-soft': 'bounce-soft 1s infinite cubic-bezier(0.45, 0, 0.55, 1)',
+				'bounce-soft': 'bounce-soft 3s infinite cubic-bezier(1, 1, 1, 1)',
 			}
 		}
 	},
