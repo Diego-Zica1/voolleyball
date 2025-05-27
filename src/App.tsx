@@ -18,6 +18,7 @@ import FinancePage from "./pages/FinancePage";
 import ScoreboardPage from "./pages/ScoreboardPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/resetPassword";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,16 @@ const AppRoutes = () => {
           </AuthCheck>
         } 
       />
+      {/* --- Adicione aqui --- */}
+      <Route 
+        path="/resetpassword" 
+        element={
+          <>
+            <ResetPassword />
+          </>
+        }
+      />
+      {/* --- até aqui --- */}
       <Route
         path="/"
         element={
