@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth  } from "@/components/AuthProvider";
+import { VolleyballIcon } from "@/components/VolleyballIcon";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -12,12 +14,11 @@ export default function ResetPasswordPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   // Extrai o access_token da hash da URL
-  useEffect(() => {
-    const params = new URLSearchParams(location.hash.substring(1));
-    const accessToken = params.get("access_token");
-    if (!accessToken) {
+  useEffect(() => {    
+    if (!user) {
       toast({
         title: "Link inválido",
         description: "O link de recuperação é inválido ou expirou.",
@@ -62,6 +63,10 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-50 dark:bg-gray-900 p-4">
+        <div className="flex flex-col items-center mb-6">
+          <VolleyballIcon className="h-16 w-16 text-volleyball-purple mb-4 animate-bounce " size={64} />
+          <h1 className="text-2xl font-bold">Vôolleyball</h1>          
+        </div>
       <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
         <h2 className="text-xl font-bold mb-4">Redefinir senha</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,6 +105,14 @@ export default function ResetPasswordPage() {
           >
             {isLoading ? "Redefinindo..." : "Redefinir senha"}
           </Button>
+          <div className="mt-2 text-right">
+              <a
+                href="/login"
+                className="text-volleyball-purple hover:underline text-sm"
+              >
+                Voltar para Login
+              </a>
+            </div>
         </form>
       </div>
     </div>
