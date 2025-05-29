@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,54 +17,64 @@ import FinancePage from "./pages/FinancePage";
 import ScoreboardPage from "./pages/ScoreboardPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage"; // ADICIONADO
+import ResetPasswordPage from "./pages/ResetPasswordPage";   // ADICIONADO
 
 const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
-    </div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
+      </div>
+    );
   }
-  
+
   if (!user) {
     return <Navigate to="/login" />;
   }
-  
+
   return <>{children}</>;
 };
 
 // Auth check component that redirects logged in users away from login page
 const AuthCheck = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
-    </div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-volleyball-purple"></div>
+      </div>
+    );
   }
-  
+
   if (user) {
     return <Navigate to="/" />;
   }
-  
+
   return <>{children}</>;
 };
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route 
-        path="/login" 
+      <Route
+        path="/login"
         element={
           <AuthCheck>
             <LoginPage />
           </AuthCheck>
-        } 
+        }
       />
+      {/* ROTA DE RECUPERAÇÃO DE SENHA */}
+      <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+      <Route path="/resetar-senha" element={<ResetPasswordPage />} />
+
       <Route
         path="/"
         element={
@@ -102,10 +111,7 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-      <Route 
-        path="/placar" 
-        element={<ScoreboardPage />} 
-      />
+      <Route path="/placar" element={<ScoreboardPage />} />
       <Route
         path="/admin"
         element={

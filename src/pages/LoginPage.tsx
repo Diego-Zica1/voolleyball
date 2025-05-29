@@ -170,6 +170,14 @@ export default function LoginPage() {
                 isLogin ? "Entrar" : "Cadastrar"
               )}
             </Button>
+            <div className="mt-2 text-right">
+              <a
+                href="/esqueci-senha"
+                className="text-volleyball-purple hover:underline text-sm"
+              >
+                Esqueceu a senha?
+              </a>
+            </div>
           </form>
         </div>
       </div>
