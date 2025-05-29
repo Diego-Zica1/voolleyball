@@ -35,10 +35,7 @@ export function Header() {
           <div className="flex items-center space-x-2">            
             <Link to="http://voolleyball.lovable.app/" className="flex items-center space-x-2 cursor-pointer">
             <VolleyballIcon className="h-10 w-10 text-volleyball-purple animate-bounce-soft" />
-            <h1 className="text-2xl font-bold">
-            <span className="text-[#FFFFFF]">Vôo</span>
-            <span className="text-[#FFFFFF]">lleyball</span>
-          </h1>
+            <h1 className="text-2xl font-bold">Vôolleyball</h1>
           </Link>
           </div>
 
