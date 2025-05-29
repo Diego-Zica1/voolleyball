@@ -250,7 +250,11 @@ export default function HomePage() {
               </Button>
             ) : (
               <Button 
-                onClick={handleCancel} 
+                onClick={() => {
+                  if (window.confirm("Tem certeza que deseja cancelar sua presença?")) {
+                    handleCancel();
+                  }
+                }} 
                 disabled={isConfirming}
                 variant="destructive"
                 className="w-full mt-4"
@@ -290,10 +294,17 @@ export default function HomePage() {
                         variant="ghost"
                         size="sm"
                         className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
-                        onClick={() => confirmation.user_id === user.id 
-                          ? handleCancel() 
-                          : handleCancelOther(confirmation.user_id)
-                        }
+                        onClick={() => {
+                          if (window.confirm(
+                            confirmation.user_id === user.id 
+                              ? "Tem certeza que deseja cancelar sua presença?" 
+                              : "Tem certeza que deseja cancelar a presença deste jogador?"
+                          )) {
+                            confirmation.user_id === user.id 
+                              ? handleCancel() 
+                              : handleCancelOther(confirmation.user_id);
+                          }
+                        }}
                       >
                         <X className="h-4 w-4" />
                       </Button>
