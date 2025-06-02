@@ -18,6 +18,8 @@ export default function TeamsPage() {
   const [absentPlayers, setAbsentPlayers] = useState<string[]>([]);
   const [game, setGame] = useState<Game | null>(null);
   const [numberOfTeams, setNumberOfTeams] = useState<number>(2);
+  const [playersPerTeam, setPlayersPerTeam] = useState<number>(6);
+  const [notDrawnPlayers, setNotDrawnPlayers] = useState<Player[]>([]);
   const [balanceBySkill, setBalanceBySkill] = useState<boolean>(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +104,13 @@ export default function TeamsPage() {
     }
   };
 
+  const handlePlayersPerTeamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value > 0) {
+      setPlayersPerTeam(value);
+    }
+  };
+
   const addPlayerToPool = () => {
     if (!selectedPlayer) return;
     const playerToAdd = unconfirmedPlayers.find(p => p.id === selectedPlayer);
@@ -137,6 +146,7 @@ export default function TeamsPage() {
     return [...presentConfirmedPlayers, ...addedUnconfirmedPlayers, ...visitorPlayers];
   };
 
+  // NOVA LÓGICA PARA RESPEITAR O LIMITE DE JOGADORES POR TIME
   const sortTeams = () => {
     const playersForDraw = getPlayersForDraw();
 
@@ -164,13 +174,31 @@ export default function TeamsPage() {
         });
       }
 
+      const totalSpots = numberOfTeams * playersPerTeam;
+
+      // Se houver mais jogadores que vagas, sorteia só até preencher todos os times
+      if (playersCopy.length > totalSpots) {
+        playersCopy = playersCopy.slice(0, totalSpots);
+      }
+
       if (balanceBySkill) {
         playersCopy.sort((a, b) => b.average_rating - a.average_rating);
+        let direction = 1;
+
         for (let i = 0; i < playersCopy.length; i++) {
-          const teamIndex = i % (numberOfTeams * 2) >= numberOfTeams
-            ? numberOfTeams * 2 - (i % (numberOfTeams * 2)) - 1
-            : i % numberOfTeams;
+          // Encontra times disponíveis (ainda não cheios)
+          let availableTeams = generatedTeams
+            .map((team, idx) => ({ team, idx }))
+            .filter(({ team }) => team.players.length < playersPerTeam);
+
+          if (availableTeams.length === 0) break;
+
+          let indexInAvailable = direction === 1 ? i % availableTeams.length : (availableTeams.length - 1) - (i % availableTeams.length);
+          let teamIndex = availableTeams[indexInAvailable].idx;
+
           generatedTeams[teamIndex].players.push(playersCopy[i]);
+
+          if ((i + 1) % numberOfTeams === 0) direction *= -1;
         }
       } else {
         playersCopy = playersCopy
@@ -178,9 +206,19 @@ export default function TeamsPage() {
           .sort((a, b) => a.sort - b.sort)
           .map(({ value }) => value);
 
+        let teamIndex = 0;
         for (let i = 0; i < playersCopy.length; i++) {
-          const teamIndex = i % numberOfTeams;
-          generatedTeams[teamIndex].players.push(playersCopy[i]);
+          let found = false;
+          for (let offset = 0; offset < numberOfTeams; offset++) {
+            let idx = (teamIndex + offset) % numberOfTeams;
+            if (generatedTeams[idx].players.length < playersPerTeam) {
+              generatedTeams[idx].players.push(playersCopy[i]);
+              teamIndex = (idx + 1) % numberOfTeams;
+              found = true;
+              break;
+            }
+          }
+          if (!found) break; // todos os times cheios
         }
       }
 
@@ -191,6 +229,10 @@ export default function TeamsPage() {
       });
 
       setTeams(generatedTeams);
+      const allDrawnPlayerIds = generatedTeams.flatMap(team => team.players.map(p => p.id));
+      const allPlayersForDraw = getPlayersForDraw();
+      const notDrawn = allPlayersForDraw.filter(p => !allDrawnPlayerIds.includes(p.id));
+      setNotDrawnPlayers(notDrawn);
 
       toast({
         title: "Times sorteados!",
@@ -228,20 +270,33 @@ export default function TeamsPage() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Configure como os times serão sorteados
             </p>
-
             <div className="space-y-4">
-              <div>
-                <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
-                  Número de Times
-                </label>
-                <Input
-                  id="numberOfTeams"
-                  type="number"
-                  min="1"
-                  value={numberOfTeams}
-                  onChange={handleNumberOfTeamsChange}
-                />
-              </div>                         
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
+                    Número de Times
+                  </label>
+                  <Input
+                    id="numberOfTeams"
+                    type="number"
+                    min="1"
+                    value={numberOfTeams}
+                    onChange={handleNumberOfTeamsChange}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="playersPerTeam" className="block text-sm font-medium mb-1">
+                    Jogadores por Time
+                  </label>
+                  <Input
+                    id="playersPerTeam"
+                    type="number"
+                    min="1"
+                    value={playersPerTeam}
+                    onChange={handlePlayersPerTeamChange}
+                  />
+                </div>
+              </div>
 
               {/* Adicionar jogador não confirmado */}
               <div className="mt-2">
@@ -307,7 +362,7 @@ export default function TeamsPage() {
                 <label htmlFor="balanceBySkill" className="text-sm font-medium">
                   Balancear por Habilidade
                 </label>
-              </div> 
+              </div>
 
               {/* Jogadores ausentes */}
               {absentPlayers.length > 0 && (
@@ -347,10 +402,9 @@ export default function TeamsPage() {
               >
                 {isSorting ? "Sorteando Times..." : "Sortear Times"}
               </Button>
-
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                 <p>Jogadores disponíveis: {getPlayersForDraw().length}</p>
-                <p>Jogadores por time: {getPlayersForDraw().length > 0 ? Math.ceil(getPlayersForDraw().length / numberOfTeams) : 0}</p>
+                <p>Jogadores por time: {playersPerTeam}</p>
               </div>
             </div>
           </div>
@@ -431,7 +485,6 @@ export default function TeamsPage() {
                 Média: {team.average_rating.toFixed(1)}
               </div>
             </div>
-
             {team.players.length > 0 ? (
               <ul className="mt-4 space-y-2">
                 {team.players.map(player => (
@@ -449,6 +502,20 @@ export default function TeamsPage() {
             )}
           </div>
         ))}
+
+        {notDrawnPlayers.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6 md:col-span-2">
+            <h2 className="text-xl font-semibold mb-4 text-red-700 dark:text-red-400">Time do Fora</h2>
+            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              {notDrawnPlayers.map(player => (
+                <li key={player.id} className="py-2 flex items-center">
+                  <User size={16} className="mr-2 text-gray-400" />
+                  <span>{player.username}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )} 
 
         {teams.length === 0 && (
           <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center justify-center">
