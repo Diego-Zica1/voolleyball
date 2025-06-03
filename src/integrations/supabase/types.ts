@@ -108,6 +108,7 @@ export type Database = {
           location: string
           max_players: number
           time: string
+          map_location?: string | null
         }
         Insert: {
           created_at?: string
@@ -117,6 +118,7 @@ export type Database = {
           location: string
           max_players: number
           time: string
+          map_location?: string | null
         }
         Update: {
           created_at?: string
@@ -126,6 +128,7 @@ export type Database = {
           location?: string
           max_players?: number
           time?: string
+          map_location?: string | null
         }
         Relationships: [
           {

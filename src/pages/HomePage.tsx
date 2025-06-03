@@ -224,7 +224,7 @@ export default function HomePage() {
                     className="flex items-center gap-2 bg-gray-800 text-white hover:bg-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600 px-4 py-2"
                   >
                     <a
-                      href="https://maps.app.goo.gl/Gzh9c2FREp2dGzCB6"
+                      href= {game.map_location}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

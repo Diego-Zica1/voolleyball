@@ -31,6 +31,7 @@ export default function AdminPage() {
   const [gameDate, setGameDate] = useState("");
   const [gameTime, setGameTime] = useState("10:00");
   const [gameLocation, setGameLocation] = useState("Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55");
+  const [gameMapLocation, setGameMapLocation] = useState("https://maps.app.goo.gl/Gzh9c2FREp2dGzCB6");
   const [maxPlayers, setMaxPlayers] = useState("18");
   const [latestGame, setLatestGame] = useState<Game | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,7 +125,8 @@ export default function AdminPage() {
         time: gameTime,
         location: gameLocation,
         max_players: parseInt(maxPlayers, 10),
-        created_by: user.id
+        created_by: user.id,
+        map_location: gameMapLocation
       });
       
       toast({
@@ -613,6 +615,18 @@ export default function AdminPage() {
                 value={gameLocation}
                 onChange={(e) => setGameLocation(e.target.value)}
                 required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="map_location" className="block text-sm font-medium mb-1">
+                Link Google Maps
+              </label>
+              <Input
+                id="location"
+                type="text"
+                value={gameMapLocation}
+                onChange={(e) => setGameMapLocation(e.target.value)}
               />
             </div>
             

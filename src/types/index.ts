@@ -33,6 +33,7 @@ export interface Game {
   max_players: number;
   created_by: string;
   created_at: string;
+  map_location?: string | null;
 }
 
 export interface Confirmation {

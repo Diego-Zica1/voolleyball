@@ -354,10 +354,11 @@ export const initializeDatabase = async (): Promise<void> => {
       console.log("No games found, creating default game...");
       await createGame({
         date: new Date().toISOString().split('T')[0],
-        time: '19:00',
+        time: '10:00',
         location: 'Arena Túnel - Quadra 01 | Entrada pela Rua Itaguara 55',
         max_players: 18,
-        created_by: 'system'
+        created_by: 'system',
+        map_location: 'https://maps.app.goo.gl/Gzh9c2FREp2dGzCB6'
       });
     }
     
