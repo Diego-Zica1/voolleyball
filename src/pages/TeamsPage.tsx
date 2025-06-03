@@ -9,6 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { X, Plus, User } from "lucide-react";
 
+// Interface estendida para incluir o Time de fora
+interface ExtendedTeam extends Team {
+  isExtraTeam?: boolean;
+}
+
 export default function TeamsPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [confirmedPlayers, setConfirmedPlayers] = useState<Player[]>([]);
@@ -18,8 +23,9 @@ export default function TeamsPage() {
   const [absentPlayers, setAbsentPlayers] = useState<string[]>([]);
   const [game, setGame] = useState<Game | null>(null);
   const [numberOfTeams, setNumberOfTeams] = useState<number>(2);
+  const [maxPlayersPerTeam, setMaxPlayersPerTeam] = useState<number>(6);
   const [balanceBySkill, setBalanceBySkill] = useState<boolean>(false);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<ExtendedTeam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSorting, setIsSorting] = useState(false);
 
@@ -34,7 +40,7 @@ export default function TeamsPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const allPlayers = await getAllPlayers();
+        const allPlayers = await getAllPlayers()
         setPlayers(allPlayers);
 
         const latestGame = await getLatestGame();
@@ -102,6 +108,13 @@ export default function TeamsPage() {
     }
   };
 
+  const handleMaxPlayersPerTeamChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    if (!isNaN(value) && value > 0) {
+      setMaxPlayersPerTeam(value);
+    }
+  };
+
   const addPlayerToPool = () => {
     if (!selectedPlayer) return;
     const playerToAdd = unconfirmedPlayers.find(p => p.id === selectedPlayer);
@@ -137,6 +150,15 @@ export default function TeamsPage() {
     return [...presentConfirmedPlayers, ...addedUnconfirmedPlayers, ...visitorPlayers];
   };
 
+  // Função para dividir array em chunks de tamanho específico
+  const chunkArray = (array: Player[], size: number): Player[][] => {
+    const chunks: Player[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  };
+
   const sortTeams = () => {
     const playersForDraw = getPlayersForDraw();
 
@@ -153,48 +175,81 @@ export default function TeamsPage() {
 
     try {
       let playersCopy = [...playersForDraw];
-      const generatedTeams: Team[] = [];
+      const generatedTeams: ExtendedTeam[] = [];
 
+      // Cria os times principais
       for (let i = 1; i <= numberOfTeams; i++) {
         generatedTeams.push({
           id: i,
           name: `Seleção ${i}`,
           players: [],
-          average_rating: 0
+          average_rating: 0,
+          isExtraTeam: false
         });
       }
 
+      // Calcula o máximo de jogadores que podem ser distribuídos nos times principais
+      const maxPlayersInMainTeams = numberOfTeams * maxPlayersPerTeam;
+      
       if (balanceBySkill) {
+        // Ordena por habilidade (maior para menor)
         playersCopy.sort((a, b) => b.average_rating - a.average_rating);
-        for (let i = 0; i < playersCopy.length; i++) {
+        
+        // Distribui jogadores usando padrão snake até o limite máximo
+        const playersToDistribute = Math.min(playersCopy.length, maxPlayersInMainTeams);
+        
+        for (let i = 0; i < playersToDistribute; i++) {
           const teamIndex = i % (numberOfTeams * 2) >= numberOfTeams
             ? numberOfTeams * 2 - (i % (numberOfTeams * 2)) - 1
             : i % numberOfTeams;
           generatedTeams[teamIndex].players.push(playersCopy[i]);
         }
       } else {
+        // Embaralha aleatoriamente
         playersCopy = playersCopy
           .map(value => ({ value, sort: Math.random() }))
           .sort((a, b) => a.sort - b.sort)
           .map(({ value }) => value);
 
-        for (let i = 0; i < playersCopy.length; i++) {
+        // Distribui jogadores em chunks até o limite máximo
+        const playersToDistribute = Math.min(playersCopy.length, maxPlayersInMainTeams);
+        
+        for (let i = 0; i < playersToDistribute; i++) {
           const teamIndex = i % numberOfTeams;
           generatedTeams[teamIndex].players.push(playersCopy[i]);
         }
       }
 
+      // Calcula média dos times principais
       generatedTeams.forEach(team => {
         if (team.players.length > 0) {
           team.average_rating = team.players.reduce((acc, player) => acc + player.average_rating, 0) / team.players.length;
         }
       });
 
+      // Verifica se há jogadores sobrando para o "Time de fora"
+      const remainingPlayers = playersCopy.slice(maxPlayersInMainTeams);
+      if (remainingPlayers.length > 0) {
+        const extraTeam: ExtendedTeam = {
+          id: numberOfTeams + 1,
+          name: "Time de fora",
+          players: remainingPlayers,
+          average_rating: remainingPlayers.length > 0 
+            ? remainingPlayers.reduce((acc, player) => acc + player.average_rating, 0) / remainingPlayers.length 
+            : 0,
+          isExtraTeam: true
+        };
+        generatedTeams.push(extraTeam);
+      }
+
       setTeams(generatedTeams);
+
+      const mainTeamsCount = generatedTeams.filter(team => !team.isExtraTeam).length;
+      const extraPlayersCount = remainingPlayers.length;
 
       toast({
         title: "Times sorteados!",
-        description: `${numberOfTeams} times foram criados com sucesso.`
+        description: `${mainTeamsCount} times foram criados${extraPlayersCount > 0 ? ` e ${extraPlayersCount} jogador(es) ficaram de fora` : ''}.`
       });
     } catch (error) {
       console.error("Error sorting teams:", error);
@@ -230,18 +285,33 @@ export default function TeamsPage() {
             </p>
 
             <div className="space-y-4">
-              <div>
-                <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
-                  Número de Times
-                </label>
-                <Input
-                  id="numberOfTeams"
-                  type="number"
-                  min="1"
-                  value={numberOfTeams}
-                  onChange={handleNumberOfTeamsChange}
-                />
-              </div>                         
+              {/* Grid para inputs lado a lado */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
+                    Número de Times
+                  </label>
+                  <Input
+                    id="numberOfTeams"
+                    type="number"
+                    min="1"
+                    value={numberOfTeams}
+                    onChange={handleNumberOfTeamsChange}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="maxPlayersPerTeam" className="block text-sm font-medium mb-1">
+                    Max Jogadores por Time
+                  </label>
+                  <Input
+                    id="maxPlayersPerTeam"
+                    type="number"
+                    min="1"
+                    value={maxPlayersPerTeam}
+                    onChange={handleMaxPlayersPerTeamChange}
+                  />
+                </div>
+              </div>
 
               {/* Adicionar jogador não confirmado */}
               <div className="mt-2">
@@ -350,7 +420,8 @@ export default function TeamsPage() {
 
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                 <p>Jogadores disponíveis: {getPlayersForDraw().length}</p>
-                <p>Jogadores por time: {getPlayersForDraw().length > 0 ? Math.ceil(getPlayersForDraw().length / numberOfTeams) : 0}</p>
+                <p>Jogadores nos times principais: {Math.min(getPlayersForDraw().length, numberOfTeams * maxPlayersPerTeam)}</p>
+                <p>Jogadores de fora: {Math.max(0, getPlayersForDraw().length - (numberOfTeams * maxPlayersPerTeam))}</p>
               </div>
             </div>
           </div>
@@ -422,12 +493,21 @@ export default function TeamsPage() {
             </div>
           )}
         </div>
+
         {/* Times sorteados */}
         {teams.map((team, index) => (
           <div key={team.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">{team.name}</h2>
-              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${index === 0 ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-white' : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-white'}`}>
+              <h2 className={`text-xl font-semibold ${team.isExtraTeam ? 'text-orange-600 dark:text-orange-400' : ''}`}>
+                {team.name}
+              </h2>
+              <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                team.isExtraTeam 
+                  ? 'bg-orange-200 text-orange-800 dark:bg-orange-800 dark:text-white'
+                  : index === 0 
+                    ? 'bg-green-200 text-green-800 dark:bg-green-800 dark:text-white' 
+                    : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-white'
+              }`}>
                 Média: {team.average_rating.toFixed(1)}
               </div>
             </div>
@@ -436,7 +516,7 @@ export default function TeamsPage() {
               <ul className="mt-4 space-y-2">
                 {team.players.map(player => (
                   <li key={player.id} className="flex justify-left items-center py-2 border-b last:border-0">
-                    <User size={16} className="mr-2 text-purple-500" />
+                    <User size={16} className={`mr-2 ${team.isExtraTeam ? 'text-orange-500' : 'text-purple-500'}`} />
                     <span>{player.username}</span>
                     <span className="text-sm text-gray-600 dark:text-gray-400 px-4"></span>
                   </li>
