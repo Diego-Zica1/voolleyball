@@ -289,7 +289,7 @@ export default function TeamsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
-                    Número de Times
+                    Times
                   </label>
                   <Input
                     id="numberOfTeams"
@@ -301,7 +301,7 @@ export default function TeamsPage() {
                 </div>
                 <div>
                   <label htmlFor="maxPlayersPerTeam" className="block text-sm font-medium mb-1">
-                    Max Jogadores por Time
+                    Jogadores por Time
                   </label>
                   <Input
                     id="maxPlayersPerTeam"

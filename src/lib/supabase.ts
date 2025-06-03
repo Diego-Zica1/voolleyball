@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User, Player, Game, Confirmation, Payment, FinanceSettings, PlayerAttributes, MonthlyBalance, CashWithdrawal, ScoreboardSettings, Transaction } from '../types';
 
+
 // Client helper functions
 export const getLatestGame = async (): Promise<Game | null> => {
   try {
@@ -411,13 +412,35 @@ export const getAllUsers = async (): Promise<User[]> => {
         email: profile.email,
         username: profile.username,
         isAdmin: profile.is_admin,
-        created_at: profile.created_at
+        created_at: profile.created_at,
+        monthly_payer: profile.monthly_payer,
       }));
     }
     return [];
   } catch (error) {
     console.error("Error in getAllUsers:", error);
     return [];
+  }
+};
+
+export const updateUserMonthlyPayer = async (userId: string, monthlyPayer: boolean): Promise<any> => {
+  try {
+    console.log("Updating user monthly payer status:", userId, monthlyPayer);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ monthly_payer: monthlyPayer })
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Error updating user monthly payer status:", error);
+      throw error;
+    }
+
+    console.log("User monthly payer status updated successfully");
+    return data;
+  } catch (error) {
+    console.error("Error in updateUserMonthlyPayer:", error);
+    throw error;
   }
 };
 

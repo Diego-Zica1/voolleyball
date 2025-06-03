@@ -16,7 +16,8 @@ import {
   getAllPayments,
   updatePaymentStatus,
   getScoreboardSettings,
-  updateScoreboardSettings
+  updateScoreboardSettings,
+  updateUserMonthlyPayer
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
 import { Loader2, RefreshCw, User2 } from "lucide-react";
@@ -44,6 +45,7 @@ export default function AdminPage() {
   const [isSavingColors, setIsSavingColors] = useState(false);
   const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
   const [isRejectingPayment, setIsRejectingPayment] = useState<string | null>(null);
+  const [isTogglingMonthlyPayer, setIsTogglingMonthlyPayer] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -157,6 +159,31 @@ export default function AdminPage() {
   //     description: "Todas as confirmações foram resetadas com sucesso",
   //   });
   // };
+
+  const toggleUserMonthlyPayer = async (userId: string, monthlyPayer: boolean) => {
+  try {
+    setIsTogglingMonthlyPayer(userId);
+    await updateUserMonthlyPayer(userId, monthlyPayer);
+
+    setUsers(users.map(u =>
+      u.id === userId ? { ...u, monthly_payer: monthlyPayer } : u
+    ));
+
+    toast({
+      title: "Mensalista atualizado",
+      description: `O usuário agora ${monthlyPayer ? 'é' : 'não é mais'} mensalista`,
+    });
+  } catch (error) {
+    console.error("Error updating user monthly payer status:", error);
+    toast({
+      title: "Erro ao atualizar mensalista",
+      description: "Não foi possível atualizar o status de mensalista",
+      variant: "destructive",
+    });
+  } finally {
+    setIsTogglingMonthlyPayer(null);
+  }
+};
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
@@ -359,6 +386,9 @@ export default function AdminPage() {
                       Email
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Mensalista
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Admin
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -377,6 +407,18 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500 dark:text-gray-400">
                           {user.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Switch
+                            checked={user.monthly_payer}
+                            onCheckedChange={(checked) => toggleUserMonthlyPayer(user.id, checked)}
+                            disabled={isTogglingMonthlyPayer === user.id}
+                          />
+                          {isTogglingMonthlyPayer === user.id && (
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

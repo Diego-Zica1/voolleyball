@@ -4,6 +4,7 @@ export interface User {
   email: string;
   isAdmin: boolean;
   created_at: string;
+  monthly_payer: boolean;  // Indicates if the user pays monthly
 }
 
 export interface Player {

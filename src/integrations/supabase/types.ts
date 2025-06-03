@@ -245,6 +245,7 @@ export type Database = {
           is_admin: boolean
           is_approved: boolean | null
           username: string
+          monthly_payer: boolean | null
         }
         Insert: {
           created_at?: string
@@ -253,6 +254,7 @@ export type Database = {
           is_admin?: boolean
           is_approved?: boolean | null
           username: string
+          monthly_payer?: boolean | null
         }
         Update: {
           created_at?: string
@@ -261,6 +263,7 @@ export type Database = {
           is_admin?: boolean
           is_approved?: boolean | null
           username?: string
+          monthly_payer?: boolean | null
         }
         Relationships: []
       }
