@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageContainer } from "@/components/PageContainer";
 import { TabNav } from "@/components/TabNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
@@ -21,9 +21,9 @@ import {
 } from "@/lib/supabase";
 import { Game, User, Payment } from "@/types";
 import { Loader2, RefreshCw, User2 } from "lucide-react";
-import { deleteUser } from "@/lib/supabase"; // Ajuste o caminho conforme necessário
+import { deleteUser } from "@/lib/supabase";
 import { Trash2 } from "lucide-react";
-
+import { getActiveEvent, createEvent, finalizeEvent } from "@/lib/events";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("controls");
@@ -47,6 +47,17 @@ export default function AdminPage() {
   const [isDeletingUser, setIsDeletingUser] = useState<string | null>(null);
   const [isRejectingPayment, setIsRejectingPayment] = useState<string | null>(null);
   const [isTogglingMonthlyPayer, setIsTogglingMonthlyPayer] = useState<string | null>(null);
+  
+  const [eventName, setEventName] = useState("");
+  const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("10:00");
+  const [eventLocation, setEventLocation] = useState("");
+  const [eventMapLocation, setEventMapLocation] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventValue, setEventValue] = useState("20");
+  const [activeEvent, setActiveEvent] = useState<any>(null);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [isFinalizingEvent, setIsFinalizingEvent] = useState(false);
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -100,6 +111,10 @@ export default function AdminPage() {
           setTeamAName(scoreboardSettings.team_a_name || "TIME A");
           setTeamBName(scoreboardSettings.team_b_name || "TIME B");
         }
+        
+        // Fetch active event
+        const event = await getActiveEvent();
+        setActiveEvent(event);
       } catch (error) {
         console.error("Error fetching admin data:", error);
       } finally {
@@ -152,15 +167,82 @@ export default function AdminPage() {
     }
   };
 
-  // const handleResetConfirmations = async () => {
-  //   if (!latestGame) return;
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-  //   // This would reset confirmations in a real app
-  //   toast({
-  //     title: "Confirmações resetadas",
-  //     description: "Todas as confirmações foram resetadas com sucesso",
-  //   });
-  // };
+    if (!user) return;
+    
+    try {
+      setIsCreatingEvent(true);
+      
+      await createEvent({
+        description: eventName,
+        date: eventDate,
+        time: eventTime,
+        location: eventLocation,
+        map_location: eventMapLocation,
+        value: parseFloat(eventValue),
+        created_by: user.id
+      });
+      
+      toast({
+        title: "Evento criado",
+        description: "O novo evento foi criado com sucesso",
+      });
+      
+      // Refresh active event
+      const event = await getActiveEvent();
+      setActiveEvent(event);
+      
+      // Clear form
+      setEventName("");
+      setEventDate("");
+      setEventTime("10:00");
+      setEventLocation("");
+      setEventMapLocation("");
+      setEventDescription("");
+      setEventValue("20");
+      
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast({
+        title: "Erro ao criar evento",
+        description: "Não foi possível criar o novo evento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
+
+  const handleFinalizeEvent = async () => {
+    if (!activeEvent) return;
+    
+    if (!window.confirm("Tem certeza que deseja finalizar este evento?")) return;
+    
+    try {
+      setIsFinalizingEvent(true);
+      
+      await finalizeEvent(activeEvent.id);
+      
+      toast({
+        title: "Evento finalizado",
+        description: "O evento foi finalizado com sucesso",
+      });
+      
+      setActiveEvent(null);
+      
+    } catch (error) {
+      console.error("Error finalizing event:", error);
+      toast({
+        title: "Erro ao finalizar evento",
+        description: "Não foi possível finalizar o evento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFinalizingEvent(false);
+    }
+  };
 
   const toggleUserMonthlyPayer = async (userId: string, monthlyPayer: boolean) => {
   try {
@@ -572,86 +654,221 @@ export default function AdminPage() {
       )}
 
       {activeTab === "schedule" && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-
-          <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
-          
-          <form onSubmit={handleCreateGame} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Agendar Novo Jogo</h2>
+            
+            <form onSubmit={handleCreateGame} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="date" className="block text-sm font-medium mb-1">
+                    Data
+                  </label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={gameDate}
+                    onChange={(e) => setGameDate(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="time" className="block text-sm font-medium mb-1">
+                    Horário
+                  </label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={gameTime}
+                    onChange={(e) => setGameTime(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              
               <div>
-                <label htmlFor="date" className="block text-sm font-medium mb-1">
-                  Data
+                <label htmlFor="location" className="block text-sm font-medium mb-1">
+                  Local
                 </label>
                 <Input
-                  id="date"
-                  type="date"
-                  value={gameDate}
-                  onChange={(e) => setGameDate(e.target.value)}
+                  id="location"
+                  type="text"
+                  value={gameLocation}
+                  onChange={(e) => setGameLocation(e.target.value)}
                   required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="map_location" className="block text-sm font-medium mb-1">
+                  Link Google Maps
+                </label>
+                <Input
+                  id="location"
+                  type="text"
+                  value={gameMapLocation}
+                  onChange={(e) => setGameMapLocation(e.target.value)}
                 />
               </div>
               
               <div>
-                <label htmlFor="time" className="block text-sm font-medium mb-1">
-                  Horário
+                <label htmlFor="maxPlayers" className="block text-sm font-medium mb-1">
+                  Número máximo de jogadores
                 </label>
                 <Input
-                  id="time"
-                  type="time"
-                  value={gameTime}
-                  onChange={(e) => setGameTime(e.target.value)}
+                  id="maxPlayers"
+                  type="number"
+                  min="2"
+                  value={maxPlayers}
+                  onChange={(e) => setMaxPlayers(e.target.value)}
                   required
                 />
               </div>
-            </div>
-            
-            <div>
-              <label htmlFor="location" className="block text-sm font-medium mb-1">
-                Local
-              </label>
-              <Input
-                id="location"
-                type="text"
-                value={gameLocation}
-                onChange={(e) => setGameLocation(e.target.value)}
-                required
-              />
-            </div>
+              
+              <Button 
+                type="submit" 
+                className="volleyball-button-primary w-full mt-4" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Agendando Jogo..." : "Agendar Jogo"}
+              </Button>
+            </form>
+          </div>
 
-            <div>
-              <label htmlFor="map_location" className="block text-sm font-medium mb-1">
-                Link Google Maps
-              </label>
-              <Input
-                id="location"
-                type="text"
-                value={gameMapLocation}
-                onChange={(e) => setGameMapLocation(e.target.value)}
-              />
-            </div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">
+              {activeEvent ? "Evento Ativo" : "Agendar Novo Evento"}
+            </h2>
             
-            <div>
-              <label htmlFor="maxPlayers" className="block text-sm font-medium mb-1">
-                Número máximo de jogadores
-              </label>
-              <Input
-                id="maxPlayers"
-                type="number"
-                min="2"
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(e.target.value)}
-                required
-              />
-            </div>
-            
-            <Button 
-              type="submit" 
-              className="volleyball-button-primary w-full mt-4" 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Agendando Jogo..." : "Agendar Jogo"}
-            </Button>
-          </form>
+            {activeEvent ? (
+              <div className="space-y-4">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h3 className="font-medium text-lg mb-2">{activeEvent.description}</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Data: {new Date(activeEvent.date).toLocaleDateString('pt-BR')} às {activeEvent.time}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Local: {activeEvent.location}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Valor: R$ {activeEvent.value.toFixed(2)}
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleFinalizeEvent}
+                  disabled={isFinalizingEvent}
+                  variant="destructive"
+                  className="w-full"
+                >
+                  {isFinalizingEvent ? "Finalizando..." : "Finalizar Evento"}
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateEvent} className="space-y-4">
+                <div>
+                  <label htmlFor="eventName" className="block text-sm font-medium mb-1">
+                    Nome do Evento
+                  </label>
+                  <Input
+                    id="eventName"
+                    type="text"
+                    value={eventName}
+                    onChange={(e) => setEventName(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="eventDate" className="block text-sm font-medium mb-1">
+                      Data
+                    </label>
+                    <Input
+                      id="eventDate"
+                      type="date"
+                      value={eventDate}
+                      onChange={(e) => setEventDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="eventTime" className="block text-sm font-medium mb-1">
+                      Horário
+                    </label>
+                    <Input
+                      id="eventTime"
+                      type="time"
+                      value={eventTime}
+                      onChange={(e) => setEventTime(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="eventLocation" className="block text-sm font-medium mb-1">
+                    Local
+                  </label>
+                  <Input
+                    id="eventLocation"
+                    type="text"
+                    value={eventLocation}
+                    onChange={(e) => setEventLocation(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="eventMapLocation" className="block text-sm font-medium mb-1">
+                    Link Google Maps
+                  </label>
+                  <Input
+                    id="eventMapLocation"
+                    type="text"
+                    value={eventMapLocation}
+                    onChange={(e) => setEventMapLocation(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="eventDescription" className="block text-sm font-medium mb-1">
+                    Descrição do evento
+                  </label>
+                  <Textarea
+                    id="eventDescription"
+                    value={eventDescription}
+                    onChange={(e) => setEventDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <label htmlFor="eventValue" className="block text-sm font-medium mb-1">
+                    Valor (R$)
+                  </label>
+                  <Input
+                    id="eventValue"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={eventValue}
+                    onChange={(e) => setEventValue(e.target.value)}
+                    required
+                  />
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="volleyball-button-primary w-full mt-4" 
+                  disabled={isCreatingEvent}
+                >
+                  {isCreatingEvent ? "Criando Evento..." : "Criar Evento"}
+                </Button>
+              </form>
+            )}
+          </div>
         </div>
       )}
 

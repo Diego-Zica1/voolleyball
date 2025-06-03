@@ -75,6 +75,77 @@ export type Database = {
           },
         ]
       }
+      event_confirmations: {
+        Row: {
+          confirmed_at: string
+          event_id: string
+          id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          confirmed_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          confirmed_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_confirmations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string
+          date: string
+          description: string
+          id: string
+          is_active: boolean | null
+          location: string
+          map_location: string | null
+          time: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          date: string
+          description: string
+          id?: string
+          is_active?: boolean | null
+          location: string
+          map_location?: string | null
+          time: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          date?: string
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          location?: string
+          map_location?: string | null
+          time?: string
+          value?: number
+        }
+        Relationships: []
+      }
       finance_settings: {
         Row: {
           id: string
@@ -106,9 +177,9 @@ export type Database = {
           date: string
           id: string
           location: string
+          map_location: string | null
           max_players: number
           time: string
-          map_location?: string | null
         }
         Insert: {
           created_at?: string
@@ -116,9 +187,9 @@ export type Database = {
           date: string
           id?: string
           location: string
+          map_location?: string | null
           max_players: number
           time: string
-          map_location?: string | null
         }
         Update: {
           created_at?: string
@@ -126,9 +197,9 @@ export type Database = {
           date?: string
           id?: string
           location?: string
+          map_location?: string | null
           max_players?: number
           time?: string
-          map_location?: string | null
         }
         Relationships: [
           {
@@ -166,6 +237,44 @@ export type Database = {
           target_amount?: number
         }
         Relationships: []
+      }
+      mvp_votes: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          player_id: string
+          rank: number
+          username: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          player_id: string
+          rank: number
+          username: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          player_id?: string
+          rank?: number
+          username?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mvp_votes_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payments: {
         Row: {
@@ -242,31 +351,34 @@ export type Database = {
       }
       profiles: {
         Row: {
+          banned: boolean | null
           created_at: string
           email: string
           id: string
           is_admin: boolean
           is_approved: boolean | null
-          username: string
           monthly_payer: boolean | null
+          username: string
         }
         Insert: {
+          banned?: boolean | null
           created_at?: string
           email: string
           id: string
           is_admin?: boolean
           is_approved?: boolean | null
-          username: string
           monthly_payer?: boolean | null
+          username: string
         }
         Update: {
+          banned?: boolean | null
           created_at?: string
           email?: string
           id?: string
           is_admin?: boolean
           is_approved?: boolean | null
-          username?: string
           monthly_payer?: boolean | null
+          username?: string
         }
         Relationships: []
       }
@@ -275,21 +387,27 @@ export type Database = {
           created_at: string | null
           id: string
           team_a_color: string
+          team_a_name: string | null
           team_b_color: string
+          team_b_name: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           team_a_color?: string
+          team_a_name?: string | null
           team_b_color?: string
+          team_b_name?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           team_a_color?: string
+          team_a_name?: string | null
           team_b_color?: string
+          team_b_name?: string | null
           updated_at?: string | null
         }
         Relationships: []

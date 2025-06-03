@@ -1,15 +1,20 @@
-
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
-import { Game, Confirmation } from "@/types";
+import { Game, Confirmation, Event, EventConfirmation } from "@/types";
 import { 
   getLatestGame, 
   getConfirmations, 
   addConfirmation, 
   removeConfirmation 
 } from "@/lib/supabase";
+import { 
+  getActiveEvent, 
+  getEventConfirmations, 
+  addEventConfirmation, 
+  removeEventConfirmation 
+} from "@/lib/events";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
@@ -20,8 +25,11 @@ export default function HomePage() {
   const { user } = useAuth();
   const [game, setGame] = useState<Game | null>(null);
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
+  const [activeEvent, setActiveEvent] = useState<Event | null>(null);
+  const [eventConfirmations, setEventConfirmations] = useState<EventConfirmation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isConfirmingEvent, setIsConfirmingEvent] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,11 +43,19 @@ export default function HomePage() {
           const gameConfirmations = await getConfirmations(latestGame.id);
           setConfirmations(gameConfirmations);
         }
+
+        // Fetch active event
+        const event = await getActiveEvent();
+        if (event) {
+          setActiveEvent(event);
+          const evtConfirmations = await getEventConfirmations(event.id);
+          setEventConfirmations(evtConfirmations);
+        }
       } catch (error) {
-        console.error("Error fetching game data:", error);
+        console.error("Error fetching data:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar os dados do jogo",
+          description: "Não foi possível carregar os dados",
           variant: "destructive",
         });
       } finally {
@@ -62,6 +78,11 @@ export default function HomePage() {
   const isUserConfirmed = () => {
     if (!user) return false;
     return confirmations.some(c => c.user_id === user.id);
+  };
+
+  const isUserConfirmedForEvent = () => {
+    if (!user || !activeEvent) return false;
+    return eventConfirmations.some(c => c.user_id === user.id);
   };
 
   const handleConfirm = async () => {
@@ -143,6 +164,60 @@ export default function HomePage() {
     }
   };
 
+  const handleEventConfirm = async () => {
+    if (!user || !activeEvent) return;
+    
+    try {
+      setIsConfirmingEvent(true);
+      await addEventConfirmation(activeEvent.id, user.id, user.username);
+      setEventConfirmations([...eventConfirmations, {
+        id: Date.now().toString(),
+        event_id: activeEvent.id,
+        user_id: user.id,
+        username: user.username,
+        confirmed_at: new Date().toISOString()
+      }]);
+      
+      toast({
+        title: "Presença confirmada",
+        description: "Sua presença no evento foi confirmada com sucesso!",
+      });
+    } catch (error) {
+      console.error("Error confirming event presence:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível confirmar sua presença no evento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConfirmingEvent(false);
+    }
+  };
+
+  const handleEventCancel = async () => {
+    if (!user || !activeEvent) return;
+    
+    try {
+      setIsConfirmingEvent(true);
+      await removeEventConfirmation(activeEvent.id, user.id);
+      setEventConfirmations(eventConfirmations.filter(c => c.user_id !== user.id));
+      
+      toast({
+        title: "Presença cancelada",
+        description: "Sua presença no evento foi cancelada com sucesso!",
+      });
+    } catch (error) {
+      console.error("Error cancelling event presence:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar sua presença no evento",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConfirmingEvent(false);
+    }
+  };
+
   const formatCapitalized = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
@@ -197,7 +272,7 @@ export default function HomePage() {
       description="Confira o próximo jogo de vôlei e confirme sua presença."
     >
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 space-y-6">
           <div className="bg-violet-50 dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Próximo Jogo</h2>
             <div className="rounded-lg bg-white dark:bg-gray-700 p-4 shadow-sm">
@@ -264,6 +339,99 @@ export default function HomePage() {
               </Button>
             )}
           </div>
+
+          {activeEvent && (
+            <div className="bg-blue-50 dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Evento Ativo</h2>
+              <div className="rounded-lg bg-white dark:bg-gray-700 p-4 shadow-sm">
+                <div className="flex flex-col md:flex-row md:justify-between items-center mb-4">
+                  <div className="text-center md:text-left mb-4 md:mb-0">
+                    <h3 className="text-lg font-medium">
+                      {activeEvent.description}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {formatDate(activeEvent.date)} às {activeEvent.time}
+                    </p>
+                  </div>
+                  <div className="dark:bg-blue-600 bg-blue-600/20 dark:text-white text-blue-600 rounded-full px-3 py-1 text-sm">
+                    R$ {activeEvent.value.toFixed(2)}
+                  </div>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Local: {activeEvent.location}
+                    </span>
+                    {activeEvent.map_location && (
+                      <Button
+                        asChild
+                        variant="secondary"
+                        size="sm"
+                        className="flex items-center gap-2 bg-gray-800 text-white hover:bg-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600 px-4 py-2"
+                      >
+                        <a
+                          href={activeEvent.map_location}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <MapPin className="w-4 h-4 mr-1" />
+                          Ver Localização
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-200 mt-1">
+                    {eventConfirmations.length} confirmados
+                  </p>
+                </div>
+              </div>
+
+              {!isUserConfirmedForEvent() ? (
+                <Button 
+                  onClick={handleEventConfirm} 
+                  disabled={isConfirmingEvent}
+                  className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
+                >
+                  <Check className="w-4 h-4 mr-2" />
+                  {isConfirmingEvent ? "Confirmando..." : "Confirmar Presença no Evento"}
+                </Button>
+              ) : (
+                <Button 
+                  onClick={() => {
+                    if (window.confirm("Tem certeza que deseja cancelar sua presença no evento?")) {
+                      handleEventCancel();
+                    }
+                  }} 
+                  disabled={isConfirmingEvent}
+                  variant="destructive"
+                  className="w-full mt-4"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  {isConfirmingEvent ? "Cancelando..." : "Cancelar Presença no Evento"}
+                </Button>
+              )}
+
+              {/* Event confirmations list */}
+              {eventConfirmations.length > 0 && (
+                <div className="mt-4 bg-white dark:bg-gray-700 rounded-lg p-4">
+                  <h4 className="font-medium mb-2">Confirmados ({eventConfirmations.length})</h4>
+                  <ul className="space-y-1">
+                    {eventConfirmations.map(confirmation => (
+                      <li 
+                        key={confirmation.id}
+                        className="text-sm text-gray-600 dark:text-gray-400"
+                      >
+                        {confirmation.username}
+                        {confirmation.user_id === user.id && (
+                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div>

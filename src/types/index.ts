@@ -114,3 +114,24 @@ export interface Transaction {
   description: string;
   created_at: string;
 }
+
+export interface Event {
+  id: string;
+  description: string;
+  date: string;
+  time: string;
+  location: string;
+  map_location?: string | null;
+  value: number;
+  created_by: string;
+  created_at: string;
+  is_active: boolean;
+}
+
+export interface EventConfirmation {
+  id: string;
+  event_id: string;
+  user_id: string;
+  username: string;
+  confirmed_at: string;
+}
