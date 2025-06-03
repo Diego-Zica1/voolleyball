@@ -30,6 +30,7 @@ export interface CreateEventData {
   map_location?: string;
   value: number;
   created_by: string;
+  event_description?: string; // Optional field for event description
 }
 
 export const getActiveEvent = async (): Promise<Event | null> => {

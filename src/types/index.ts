@@ -126,6 +126,7 @@ export interface Event {
   created_by: string;
   created_at: string;
   is_active: boolean;
+  event_description?: string; // Optional field for event description
 }
 
 export interface EventConfirmation {

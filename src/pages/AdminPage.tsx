@@ -50,11 +50,11 @@ export default function AdminPage() {
   
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("10:00");
+  const [eventTime, setEventTime] = useState("12:00");
   const [eventLocation, setEventLocation] = useState("");
   const [eventMapLocation, setEventMapLocation] = useState("");
   const [eventDescription, setEventDescription] = useState("");
-  const [eventValue, setEventValue] = useState("20");
+  const [eventValue, setEventValue] = useState("30");
   const [activeEvent, setActiveEvent] = useState<any>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isFinalizingEvent, setIsFinalizingEvent] = useState(false);
@@ -182,7 +182,8 @@ export default function AdminPage() {
         location: eventLocation,
         map_location: eventMapLocation,
         value: parseFloat(eventValue),
-        created_by: user.id
+        created_by: user.id,
+        event_description: eventDescription
       });
       
       toast({
@@ -197,11 +198,11 @@ export default function AdminPage() {
       // Clear form
       setEventName("");
       setEventDate("");
-      setEventTime("10:00");
+      setEventTime("12:00");
       setEventLocation("");
       setEventMapLocation("");
       setEventDescription("");
-      setEventValue("20");
+      setEventValue("30");
       
     } catch (error) {
       console.error("Error creating event:", error);

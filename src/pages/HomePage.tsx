@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/AuthProvider";
+import { useNavigate } from "react-router-dom";
 import { Game, Confirmation, Event, EventConfirmation } from "@/types";
 import { 
   getLatestGame, 
@@ -162,6 +163,11 @@ export default function HomePage() {
         variant: "destructive",
       });
     }
+  };
+  const navigate = useNavigate();
+  const handleClick = () => {
+    // Exemplo usando query string
+    navigate("/contabilidade?tab=payment");
   };
 
   const handleEventConfirm = async () => {
@@ -342,7 +348,7 @@ export default function HomePage() {
 
           {activeEvent && (
             <div className="bg-blue-50 dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Evento Ativo</h2>
+              <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Próximo Evento</h2>
               <div className="rounded-lg bg-white dark:bg-gray-700 p-4 shadow-sm">
                 <div className="flex flex-col md:flex-row md:justify-between items-center mb-4">
                   <div className="text-center md:text-left mb-4 md:mb-0">
@@ -353,8 +359,8 @@ export default function HomePage() {
                       {formatDate(activeEvent.date)} às {activeEvent.time}
                     </p>
                   </div>
-                  <div className="dark:bg-blue-600 bg-blue-600/20 dark:text-white text-blue-600 rounded-full px-3 py-1 text-sm">
-                    R$ {activeEvent.value.toFixed(2)}
+                  <div className="dark:bg-volleyball-purple bg-blue-600/20 dark:text-white text-blue-600 rounded-full px-3 py-1 text-sm">
+                    Valor - R$ {activeEvent.value.toFixed(2)}
                   </div>
                 </div>
                 <div className="border-t pt-4 mt-4">
@@ -379,10 +385,23 @@ export default function HomePage() {
                         </a>
                       </Button>
                     )}
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-200 mt-1">
+                  </div>                  
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span className="text-gray-600 dark:text-gray-200 mt-1">
+                      {activeEvent.event_description || "Descrição do evento não disponível."} 
+                    </span>
+                    <div className="text-right mt-4">
+                      <Button
+                        className="volleyball-button-primary h-8"
+                        onClick={handleClick}
+                      >
+                        Realizar Pagamento
+                      </Button>
+                    </div>
+                  </div> 
+                  <p className="text-gray-600 dark:text-gray-400">
                     {eventConfirmations.length} confirmados
-                  </p>
+                  </p>                 
                 </div>
               </div>
 
@@ -390,7 +409,7 @@ export default function HomePage() {
                 <Button 
                   onClick={handleEventConfirm} 
                   disabled={isConfirmingEvent}
-                  className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
+                  className="w-full mt-4 bg-blue-600 hover:bg-blue-700 bg-volleyball-green hover:bg-volleyball-green/90"
                 >
                   <Check className="w-4 h-4 mr-2" />
                   {isConfirmingEvent ? "Confirmando..." : "Confirmar Presença no Evento"}

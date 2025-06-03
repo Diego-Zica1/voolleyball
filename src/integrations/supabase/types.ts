@@ -119,6 +119,7 @@ export type Database = {
           map_location: string | null
           time: string
           value: number
+          event_description?: string | null
         }
         Insert: {
           created_at?: string
@@ -131,6 +132,7 @@ export type Database = {
           map_location?: string | null
           time: string
           value: number
+          event_description?: string | null
         }
         Update: {
           created_at?: string
@@ -143,6 +145,7 @@ export type Database = {
           map_location?: string | null
           time?: string
           value?: number
+          event_description?: string | null
         }
         Relationships: []
       }
