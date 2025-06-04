@@ -234,6 +234,12 @@ export default function HomePage() {
     }
   };
 
+  const isUserEventPayed = () => {
+    if (!user || !activeEvent) return false;
+    const confirmation = eventConfirmations.find(c => c.user_id === user.id);
+    return confirmation ? confirmation.event_payed : false;
+  };
+
   const handleEventCancelOther = async (userId: string) => {
     if (!activeEvent) return;
   
@@ -449,16 +455,22 @@ export default function HomePage() {
                       {activeEvent.event_description || "Descrição do evento não disponível."} 
                     </span>
                     <Button
-                      asChild
                       variant="secondary"
                       size="sm"
-                      className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-800 dark:bg-green-400 dark:text-gray-800 dark:hover:bg-green-600 px-4 py-2 mt-4 cursor-pointer"
-                      onClick={handleClick}
+                      className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-800 dark:bg-green-400 dark:text-gray-800 dark:hover:bg-green-600 px-4 py-2 mt-4 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:dark:bg-gray-800 disabled:dark:text-gray-200"
+                      onClick={(e) => {
+                        if (isUserEventPayed()) {
+                          e.preventDefault();
+                          return;
+                        }
+                        handleClick();
+                      }}
+                      disabled={isUserEventPayed()}
                     >
-                      <div>
+                      <>
                         <DollarSign className="w-4 h-4 mr-1" />
-                        Realizar Pagamento
-                      </div>
+                        {isUserEventPayed() ? "Pagamento já Realizado" : "Realizar Pagamento"}
+                      </>
                     </Button>
                   </div> 
                   <p className="text-gray-600 dark:text-green-400 mt-3">
@@ -516,7 +528,7 @@ export default function HomePage() {
                           )}
                         </div>
                         
-                        {(user.isAdmin && confirmation.user_id !== user.id) && (
+                        {user.isAdmin && (
                           <div className="flex gap-2 items-center">
                             {/* Botões de Pagamento/Estorno */}
                             <div className="flex border-r border-gray-200 dark:border-gray-700 pr-2">
