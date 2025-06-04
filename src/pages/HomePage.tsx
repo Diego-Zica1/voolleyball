@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MapPin } from "lucide-react";
+import { MapPin, DollarSign } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -387,19 +387,23 @@ export default function HomePage() {
                     )}
                   </div>                  
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                    <span className="text-gray-600 dark:text-gray-200 mt-1">
+                    <span className="text-gray-600 dark:text-gray-200 mt-3">
                       {activeEvent.event_description || "Descrição do evento não disponível."} 
                     </span>
-                    <div className="text-right mt-4">
-                      <Button
-                        className="volleyball-button-primary h-8"
-                        onClick={handleClick}
-                      >
+                    <Button
+                      asChild
+                      variant="secondary"
+                      size="sm"
+                      className="flex items-center gap-2 bg-volleyball-green text-white hover:bg-volleyball-green/80 dark:bg-volleyball-green dark:text-white dark:hover:bg-volleyball-green/80 px-4 py-2 mt-4 cursor-pointer"
+                      onClick={handleClick}
+                    >
+                      <div>
+                        <DollarSign className="w-4 h-4 mr-1" />
                         Realizar Pagamento
-                      </Button>
-                    </div>
+                      </div>
+                    </Button>
                   </div> 
-                  <p className="text-gray-600 dark:text-gray-400">
+                  <p className="text-gray-600 dark:text-gray-400 mt-3">
                     {eventConfirmations.length} confirmados
                   </p>                 
                 </div>

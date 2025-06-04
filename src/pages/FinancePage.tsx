@@ -11,10 +11,13 @@ import { getFinanceSettings, addPayment, getAllPayments, getCurrentMonthBalance,
 import { FinanceSettings, Payment, MonthlyBalance, CashWithdrawal } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsTab } from "@/components/TransactionsTab";
+import { useSearchParams } from "react-router-dom";
 
 
 export default function FinancePage() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [settings, setSettings] = useState<FinanceSettings | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [monthlyBalances, setMonthlyBalances] = useState<MonthlyBalance[]>([]);
@@ -35,7 +38,7 @@ export default function FinancePage() {
   const { toast } = useToast();
 
   const tabs = [
-    { id: "overview", label: "Visão Geral" },
+    { id: "overview", label: "Finanças" },
     { id: "payment", label: "Realizar Pagamento" },
     { id: "extract", label: "Extrato" }
   ];
