@@ -66,7 +66,7 @@ export default function AdminPage() {
   const tabs = [
     { id: "controls", label: "Gerenciar Usuários" },
     { id: "payments", label: "Pagamentos Pendentes" },
-    { id: "schedule", label: "Agendar Novo Jogo" },
+    { id: "schedule", label: "Agendar Jogo / Evento" },
     { id: "scoreboard", label: "Configurar Placar" }
   ];
 
