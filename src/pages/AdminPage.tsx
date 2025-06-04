@@ -969,7 +969,7 @@ export default function AdminPage() {
             
             <Button 
               onClick={handleSaveScoreboardSettings} 
-              className="w-full mt-4"
+              className="w-full mt-4 text-white bg-volleyball-purple hover:bg-volleyball-purple/90"
               disabled={isSavingColors}
             >
               {isSavingColors ? (

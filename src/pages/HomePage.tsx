@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Check, X } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MapPin, DollarSign } from "lucide-react";
+import { MapPin, DollarSign, Beef, Volleyball, SquareCheckBig } from "lucide-react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -307,6 +307,7 @@ export default function HomePage() {
               <div className="flex flex-col md:flex-row md:justify-between items-center mb-4">
                 <div className="text-center md:text-left mb-4 md:mb-0">
                   <h3 className="text-lg font-medium capitalize">
+                    <Volleyball className="inline-block mr-2 mb-2" />
                     {formatDate(game.date)}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">às {game.time}</p>
@@ -375,6 +376,7 @@ export default function HomePage() {
                 <div className="flex flex-col md:flex-row md:justify-between items-center mb-4">
                   <div className="text-center md:text-left mb-4 md:mb-0">
                     <h3 className="text-lg font-medium">
+                      <Beef className="inline-block mr-2 mb-2" />
                       {activeEvent.description}
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
@@ -458,8 +460,8 @@ export default function HomePage() {
 
               {/* Event confirmations list */}
               {eventConfirmations.length > 0 && (
-                <div className="mt-4 bg-white dark:bg-gray-700 rounded-lg p-4">
-                  <h4 className="font-medium mb-2">Confirmados ({eventConfirmations.length})</h4>
+                <div className="mt-4 bg-white dark:bg-gray-700 rounded-lg p-4">                  
+                  <h4 className="font-medium mb-2"><SquareCheckBig className="inline-block mr-2 mb-2" /> Confirmados ({eventConfirmations.length})</h4>
                   <ul className="space-y-1">
                     {eventConfirmations.map(confirmation => (
                       <li 
@@ -498,6 +500,7 @@ export default function HomePage() {
         <div>
           <div id= "confirmed_players" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">
+              <SquareCheckBig className="inline-block mr-2" />
               Jogadores Confirmados ({confirmations.length})
             </h2>
             {confirmations.length === 0 ? (
