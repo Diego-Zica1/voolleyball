@@ -82,6 +82,7 @@ export type Database = {
           id: string
           user_id: string
           username: string
+          event_payed: boolean;
         }
         Insert: {
           confirmed_at?: string
@@ -89,6 +90,7 @@ export type Database = {
           id?: string
           user_id: string
           username: string
+          event_payed: boolean;
         }
         Update: {
           confirmed_at?: string
@@ -96,6 +98,7 @@ export type Database = {
           id?: string
           user_id?: string
           username?: string
+          event_payed?: boolean;
         }
         Relationships: [
           {

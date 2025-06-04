@@ -135,4 +135,5 @@ export interface EventConfirmation {
   user_id: string;
   username: string;
   confirmed_at: string;
+  event_payed: boolean;
 }

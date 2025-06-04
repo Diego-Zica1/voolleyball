@@ -14,10 +14,12 @@ import {
   getActiveEvent, 
   getEventConfirmations, 
   addEventConfirmation, 
-  removeEventConfirmation 
+  removeEventConfirmation, 
+  updateEventPayment,
+  revertEventPayment
 } from "@/lib/events";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X } from "lucide-react";
+import { Check, X, Trash } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MapPin, DollarSign, Beef, Volleyball, SquareCheckBig } from "lucide-react";
@@ -181,7 +183,8 @@ export default function HomePage() {
         event_id: activeEvent.id,
         user_id: user.id,
         username: user.username,
-        confirmed_at: new Date().toISOString()
+        confirmed_at: new Date().toISOString(),
+        event_payed: false,
       }]);
       
       toast({
@@ -197,6 +200,31 @@ export default function HomePage() {
       });
     } finally {
       setIsConfirmingEvent(false);
+    }
+  };
+
+  const handlePaymentUpdate = async (confirmation: EventConfirmation, status: boolean) => {
+    try {
+      if (status) {
+        await updateEventPayment(activeEvent!.id, confirmation.user_id);
+      } else {
+        await revertEventPayment(activeEvent!.id, confirmation.user_id);
+      }
+      
+      const updated = eventConfirmations.map(c => 
+        c.id === confirmation.id ? {...c, event_payed: status} : c
+      );
+      
+      setEventConfirmations(updated);
+      toast({ 
+        title: status ? "Pagamento confirmado!" : "Pagamento estornado!",
+        variant: "default"
+      });
+    } catch (error) {
+      toast({ 
+        title: `Erro ao ${status ? 'confirmar' : 'estornar'} pagamento`,
+        variant: "destructive" 
+      });
     }
   };
 
@@ -468,25 +496,67 @@ export default function HomePage() {
                         key={confirmation.id}
                         className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between"
                       >
-                        <span>
-                          {confirmation.username}
-                          {confirmation.user_id === user.id && (
-                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {confirmation.username}
+                            {confirmation.user_id === user.id && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
+                            )}
+                          </span>
+                          {confirmation.event_payed && (
+                            <span className="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 text-xs px-2 py-1 rounded-full">
+                              Pago
+                            </span>
                           )}
-                        </span>
+                        </div>
+                        
                         {(user.isAdmin && confirmation.user_id !== user.id) && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
-                            onClick={() => {
-                              if (window.confirm("Tem certeza que deseja cancelar a presença deste participante?")) {
-                                handleEventCancelOther(confirmation.user_id);
-                              }
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2 items-center">
+                            {/* Botões de Pagamento/Estorno */}
+                            <div className="flex border-r border-gray-200 dark:border-gray-700 pr-2">
+                              {!confirmation.event_payed ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-500 hover:text-green-700 hover:bg-green-500/20"
+                                  onClick={async () => handlePaymentUpdate(confirmation, true)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-500/20"
+                                  onClick={async () => handlePaymentUpdate(confirmation, false)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Botão de Remover Confirmação */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gray-500 hover:text-red-600 hover:bg-red-500/20"
+                              onClick={async () => {
+                                try {
+                                  await removeEventConfirmation(activeEvent!.id, confirmation.user_id);
+                                  const updated = eventConfirmations.filter(c => c.id !== confirmation.id);
+                                  setEventConfirmations(updated);
+                                  toast({ title: "Presença removida com sucesso!" });
+                                } catch (error) {
+                                  toast({ 
+                                    title: "Erro ao remover presença",
+                                    variant: "destructive" 
+                                  });
+                                }
+                              }}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         )}
                       </li>
                     ))}

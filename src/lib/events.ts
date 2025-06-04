@@ -20,6 +20,7 @@ export interface EventConfirmation {
   user_id: string;
   username: string;
   confirmed_at: string;
+  event_payed: boolean;
 }
 
 export interface CreateEventData {
@@ -129,7 +130,8 @@ export const addEventConfirmation = async (
         {
           event_id: eventId,
           user_id: userId,
-          username: username
+          username: username,
+          event_payed: false // or set to true if appropriate
         }
       ]);
 
@@ -163,3 +165,40 @@ export const removeEventConfirmation = async (
     throw error;
   }
 };
+
+export const updateEventPayment = async (
+  eventId: string,
+  userId: string
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('event_confirmations')
+      .update({ event_payed: true })
+      .eq('event_id', eventId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    throw error;
+  }
+};
+
+export const revertEventPayment = async (
+  eventId: string,
+  userId: string
+): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('event_confirmations')
+      .update({ event_payed: false })
+      .eq('event_id', eventId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error reverting payment status:', error);
+    throw error;
+  }
+};
+
