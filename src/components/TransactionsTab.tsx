@@ -128,14 +128,25 @@ export function TransactionsTab() {
                       <TableRow key={transaction.id}>
                         <TableCell>{formatDate(transaction.created_at)}</TableCell>
                         <TableCell>
-                          {transaction.description?.includes("monthly")
-                            ? "Mensalidade"
-                            : transaction.description?.includes("weekly")
-                            ? "Diária"
-                            : transaction.description?.includes("custom")
-                            ? "Esporádico"
-                            : transaction.description
-                          }
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              transaction.description?.includes("monthly")
+                                ? "bg-green-100 text-green-800 dark:bg-black/50 dark:text-green-400"
+                                : transaction.description?.includes("weekly")
+                                ? "bg-blue-100 text-blue-800 dark:bg-black/50 dark:text-blue-400"
+                                : transaction.description?.includes("custom")
+                                ? "bg-orange-100 text-orange-800 dark:bg-black/50 dark:text-orange-400"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {transaction.description?.includes("monthly")
+                              ? "Mensalidade"
+                              : transaction.description?.includes("weekly")
+                              ? "Diária"
+                              : transaction.description?.includes("custom")
+                              ? "Esporádico"
+                              : transaction.description}
+                          </span>
                         </TableCell>
                         <TableCell>{transaction.username}</TableCell>
                         <TableCell className={`text-right ${transaction.amount >= 0 ? 'text-green-500' : 'text-red-500'}`}>

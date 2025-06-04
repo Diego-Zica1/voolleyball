@@ -28,6 +28,7 @@ export default function TeamsPage() {
   const [teams, setTeams] = useState<ExtendedTeam[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSorting, setIsSorting] = useState(false);
+  
 
   // Visitantes
   const [addVisitor, setAddVisitor] = useState(false);
@@ -338,6 +339,7 @@ export default function TeamsPage() {
                     size="sm"
                     onClick={addPlayerToPool}
                     disabled={!selectedPlayer}
+                    className="h-10 volleyball-button-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus size={16} className="mr-1" />
                     Incluir
@@ -368,7 +370,7 @@ export default function TeamsPage() {
                 )}
               </div>
 
-              <div className="flex items-center space-x-2 dark:bg-gray-800 pb-6 pt-2 border-b border-gray-200 dark:border-gray-700">
+              {/* <div className="flex items-center space-x-2 dark:bg-gray-800 pb-6 pt-2 border-b border-gray-200 dark:border-gray-700">
                 <Switch
                   id="balanceBySkill"
                   checked={balanceBySkill}
@@ -377,7 +379,7 @@ export default function TeamsPage() {
                 <label htmlFor="balanceBySkill" className="text-sm font-medium">
                   Balancear por Habilidade
                 </label>
-              </div> 
+              </div>  */}
 
               {/* Jogadores ausentes */}
               {absentPlayers.length > 0 && (
