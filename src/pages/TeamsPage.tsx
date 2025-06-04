@@ -339,7 +339,7 @@ export default function TeamsPage() {
                     size="sm"
                     onClick={addPlayerToPool}
                     disabled={!selectedPlayer}
-                    className="h-10 volleyball-button-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="h-10 volleyball-button-primary cursor-pointer disabled:bg-gray-600 disabled:cursor-not-allowed"
                   >
                     <Plus size={16} className="mr-1" />
                     Incluir
