@@ -12,6 +12,7 @@ import { FinanceSettings, Payment, MonthlyBalance, CashWithdrawal } from "@/type
 import { useToast } from "@/hooks/use-toast";
 import { TransactionsTab } from "@/components/TransactionsTab";
 import { useSearchParams } from "react-router-dom";
+import { DollarSign } from "lucide-react";
 
 
 export default function FinancePage() {
@@ -405,11 +406,12 @@ export default function FinancePage() {
               </div>
             )}
 
-            <div className="text-right mt-4">
+            <div className="flex text-center mt-4">
               <Button
-                className="volleyball-button-primary"
+                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-800 dark:bg-green-400 dark:text-gray-800 dark:hover:bg-green-600 px-4 py-2 mt-4 cursor-pointer"
                 onClick={() => setActiveTab("payment")}
               >
+                <DollarSign className="w-4 h-4 mr-1" />
                 Realizar Novo Pagamento
               </Button>
             </div>

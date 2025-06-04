@@ -416,7 +416,7 @@ export default function HomePage() {
                       asChild
                       variant="secondary"
                       size="sm"
-                      className="flex items-center gap-2 bg-volleyball-green text-white hover:bg-volleyball-green/80 dark:bg-volleyball-green dark:text-white dark:hover:bg-volleyball-green/80 px-4 py-2 mt-4 cursor-pointer"
+                      className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-800 dark:bg-green-400 dark:text-gray-800 dark:hover:bg-green-600 px-4 py-2 mt-4 cursor-pointer"
                       onClick={handleClick}
                     >
                       <div>
