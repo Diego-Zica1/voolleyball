@@ -200,6 +200,28 @@ export default function HomePage() {
     }
   };
 
+  const handleEventCancelOther = async (userId: string) => {
+    if (!activeEvent) return;
+  
+    try {
+      await removeEventConfirmation(activeEvent.id, userId);
+      setEventConfirmations(eventConfirmations.filter(c => c.user_id !== userId));
+  
+      toast({
+        title: "Presença cancelada",
+        description: "A presença do participante foi cancelada com sucesso!",
+      });
+    } catch (error) {
+      console.error("Error cancelling other's event presence:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível cancelar a presença",
+        variant: "destructive",
+      });
+    }
+  };
+  
+
   const handleEventCancel = async () => {
     if (!user || !activeEvent) return;
     
@@ -314,7 +336,7 @@ export default function HomePage() {
                     </a>
                   </Button>
                 </div>
-                <p className="text-gray-600 dark:text-gray-200 mt-1">
+                <p className="text-gray-600 dark:text-green-400 mt-3">
                   {confirmations.length} confirmados de {game.max_players} vagas
                 </p>
               </div>
@@ -403,7 +425,7 @@ export default function HomePage() {
                       </div>
                     </Button>
                   </div> 
-                  <p className="text-gray-600 dark:text-gray-400 mt-3">
+                  <p className="text-gray-600 dark:text-green-400 mt-3">
                     {eventConfirmations.length} confirmados
                   </p>                 
                 </div>
@@ -442,11 +464,27 @@ export default function HomePage() {
                     {eventConfirmations.map(confirmation => (
                       <li 
                         key={confirmation.id}
-                        className="text-sm text-gray-600 dark:text-gray-400"
+                        className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between"
                       >
-                        {confirmation.username}
-                        {confirmation.user_id === user.id && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
+                        <span>
+                          {confirmation.username}
+                          {confirmation.user_id === user.id && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
+                          )}
+                        </span>
+                        {(user.isAdmin && confirmation.user_id !== user.id) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
+                            onClick={() => {
+                              if (window.confirm("Tem certeza que deseja cancelar a presença deste participante?")) {
+                                handleEventCancelOther(confirmation.user_id);
+                              }
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                         )}
                       </li>
                     ))}
