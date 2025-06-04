@@ -512,7 +512,7 @@ export default function HomePage() {
                     {eventConfirmations.map(confirmation => (
                       <li 
                         key={confirmation.id}
-                        className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between"
+                        className="text-sm text-gray-600 dark:text-gray-400 flex items-center justify-between border-t border-gray-200 dark:border-gray-800 py-2 first:border-t-0"
                       >
                         <div className="flex items-center gap-2">
                           <span>
@@ -531,7 +531,7 @@ export default function HomePage() {
                         {user.isAdmin && (
                           <div className="flex gap-2 items-center">
                             {/* Botões de Pagamento/Estorno */}
-                            <div className="flex border-r border-gray-200 dark:border-gray-700 pr-2">
+                            <div className="flex gap-2 dark:bg-gray-800 rounded-lg">
                               {!confirmation.event_payed ? (
                                 <TooltipProvider>
                                   <Tooltip>
@@ -578,7 +578,7 @@ export default function HomePage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-gray-500 hover:text-red-600 hover:bg-red-500/20"
+                                    className="text-gray-500 hover:text-red-600 hover:bg-red-500/20 flex gap-2 dark:bg-gray-800 rounded-lg"
                                     onClick={async () => {
                                       try {
                                         await removeEventConfirmation(activeEvent!.id, confirmation.user_id);
@@ -627,7 +627,7 @@ export default function HomePage() {
                 {confirmations.map(confirmation => (
                   <li 
                     key={confirmation.id}
-                    className="flex justify-between items-center py-2 border-b last:border-0"
+                    className="flex justify-between items-center py-2 border-b dark:border-[#020817] last:border-0"
                   >
                     <span className="flex items-center">
                       {confirmation.username}
@@ -643,7 +643,7 @@ export default function HomePage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20 flex gap-2 dark:bg-[#020817] rounded-lg"
                               onClick={() => {
                                 if (window.confirm(
                                   confirmation.user_id === user.id 
