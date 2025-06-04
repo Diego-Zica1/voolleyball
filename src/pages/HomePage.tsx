@@ -18,6 +18,12 @@ import {
   updateEventPayment,
   revertEventPayment
 } from "@/lib/events";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Trash } from "lucide-react";
 import { format, parse } from "date-fns";
@@ -515,47 +521,74 @@ export default function HomePage() {
                             {/* Botões de Pagamento/Estorno */}
                             <div className="flex border-r border-gray-200 dark:border-gray-700 pr-2">
                               {!confirmation.event_payed ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-green-500 hover:text-green-700 hover:bg-green-500/20"
-                                  onClick={async () => handlePaymentUpdate(confirmation, true)}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-green-500 hover:text-green-700 hover:bg-green-500/20"
+                                        onClick={async () => handlePaymentUpdate(confirmation, true)}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Marcar como pago
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-500 hover:text-red-700 hover:bg-red-500/20"
-                                  onClick={async () => handlePaymentUpdate(confirmation, false)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-500 hover:text-red-700 hover:bg-red-500/20"
+                                        onClick={async () => handlePaymentUpdate(confirmation, false)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      Estornar pagamento
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
 
                             {/* Botão de Remover Confirmação */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gray-500 hover:text-red-600 hover:bg-red-500/20"
-                              onClick={async () => {
-                                try {
-                                  await removeEventConfirmation(activeEvent!.id, confirmation.user_id);
-                                  const updated = eventConfirmations.filter(c => c.id !== confirmation.id);
-                                  setEventConfirmations(updated);
-                                  toast({ title: "Presença removida com sucesso!" });
-                                } catch (error) {
-                                  toast({ 
-                                    title: "Erro ao remover presença",
-                                    variant: "destructive" 
-                                  });
-                                }
-                              }}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-gray-500 hover:text-red-600 hover:bg-red-500/20"
+                                    onClick={async () => {
+                                      try {
+                                        await removeEventConfirmation(activeEvent!.id, confirmation.user_id);
+                                        const updated = eventConfirmations.filter(c => c.id !== confirmation.id);
+                                        setEventConfirmations(updated);
+                                        toast({ title: "Presença removida com sucesso!" });
+                                      } catch (error) {
+                                        toast({ 
+                                          title: "Erro ao remover presença",
+                                          variant: "destructive" 
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Cancelar presença no evento
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </div>
                         )}
                       </li>
@@ -592,24 +625,35 @@ export default function HomePage() {
                     </span>
                     
                     {(confirmation.user_id === user.id || userCanCancelOthers(confirmation.user_id)) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
-                        onClick={() => {
-                          if (window.confirm(
-                            confirmation.user_id === user.id 
-                              ? "Tem certeza que deseja cancelar sua presença?" 
-                              : "Tem certeza que deseja cancelar a presença deste jogador?"
-                          )) {
-                            confirmation.user_id === user.id 
-                              ? handleCancel() 
-                              : handleCancelOther(confirmation.user_id);
-                          }
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-500 dark:hover:bg-red-900/20"
+                              onClick={() => {
+                                if (window.confirm(
+                                  confirmation.user_id === user.id 
+                                    ? "Tem certeza que deseja cancelar sua presença?" 
+                                    : "Tem certeza que deseja cancelar a presença deste jogador?"
+                                )) {
+                                  confirmation.user_id === user.id 
+                                    ? handleCancel() 
+                                    : handleCancelOther(confirmation.user_id);
+                                }
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {confirmation.user_id === user.id
+                              ? "Cancelar sua presença"
+                              : "Cancelar presença deste jogador"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </li>
                 ))}
