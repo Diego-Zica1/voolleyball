@@ -31,14 +31,14 @@ export const getConfirmations = async (gameId: string): Promise<Confirmation[]> 
     console.log("Fetching confirmations for game:", gameId);
     const { data, error } = await supabase
       .from('confirmations')
-      .select('*')
+      .select('*, profiles!inner(username, monthly_payer)')
       .eq('game_id', gameId);
-      
+
     if (error) {
       console.error("Error fetching confirmations:", error);
       throw error;
     }
-    
+
     console.log("Confirmations fetched:", data);
     return data || [];
   } catch (error) {

@@ -37,6 +37,7 @@ export interface Game {
 }
 
 export interface Confirmation {
+  profiles: any;
   id: string;
   game_id: string;
   user_id: string;

@@ -105,7 +105,8 @@ export default function HomePage() {
         game_id: game.id,
         user_id: user.id,
         username: user.username,
-        confirmed_at: new Date().toISOString()
+        confirmed_at: new Date().toISOString(),
+        profiles: {} // Add an appropriate value for 'profiles' here
       }]);
       
       toast({
@@ -631,6 +632,9 @@ export default function HomePage() {
                   >
                     <span className="flex items-center">
                       {confirmation.username}
+                      {confirmation.profiles.monthly_payer && (
+                        <span className="ml-1 text-[#876ff3]">[M]</span>
+                      )}
                       {confirmation.user_id === user.id && (
                         <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(você)</span>
                       )}
