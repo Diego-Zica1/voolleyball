@@ -60,7 +60,7 @@ export interface Payment {
   payment_type: 'monthly' | 'weekly' | string;
   receipt_url: string | null;
   status: 'pending' | 'approved' | string;
-  created_at: string;
+  created_at: string; 
 }
 
 export interface FinanceSettings {
