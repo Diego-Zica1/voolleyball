@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { TabNav } from "@/components/TabNav";
@@ -14,7 +13,6 @@ import { TransactionsTab } from "@/components/TransactionsTab";
 import { useSearchParams } from "react-router-dom";
 import { DollarSign } from "lucide-react";
 
-
 export default function FinancePage() {
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") || "overview";
@@ -27,14 +25,14 @@ export default function FinancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
-  
+
   const [paymentType, setPaymentType] = useState<"monthly" | "weekly" | "custom">("monthly");
   const [customAmount, setCustomAmount] = useState<number | "">("");
   const [receiptUrl, setReceiptUrl] = useState("");
-  
+
   const [withdrawalAmount, setWithdrawalAmount] = useState<number>(0);
   const [withdrawalReason, setWithdrawalReason] = useState("");
-  
+
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -43,7 +41,7 @@ export default function FinancePage() {
     { id: "payment", label: "Realizar Pagamento" },
     { id: "extract", label: "Extrato" }
   ];
-  
+
   // Add withdrawal tab only for admin users
   if (user?.isAdmin) {
     tabs.push({ id: "withdrawal", label: "Resgate de Caixa" });
@@ -55,16 +53,16 @@ export default function FinancePage() {
         setIsLoading(true);
         const financeSettings = await getFinanceSettings();
         setSettings(financeSettings);
-        
+
         const allPayments = await getAllPayments();
         setPayments(allPayments);
-        
+
         const balances = await getMonthlyBalance();
         setMonthlyBalances(balances);
-        
+
         const balance = await getCurrentMonthBalance();
         setCurrentBalance(balance);
-        
+
         const withdrawals = await getCashWithdrawals();
         setCashWithdrawals(withdrawals);
       } catch (error) {
@@ -84,7 +82,7 @@ export default function FinancePage() {
 
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Erro",
@@ -105,13 +103,13 @@ export default function FinancePage() {
 
     try {
       setIsSubmitting(true);
-      
+
       const amount = paymentType === "monthly"
-      ? settings.monthly_fee
-      : paymentType === "weekly"
-        ? settings.weekly_fee
-        : Number(customAmount) || 0;
-      
+        ? settings.monthly_fee
+        : paymentType === "weekly"
+          ? settings.weekly_fee
+          : Number(customAmount) || 0;
+
       await addPayment({
         user_id: user.id,
         username: user.username,
@@ -120,20 +118,17 @@ export default function FinancePage() {
         receipt_url: receiptUrl || null,
         status: "pending"
       });
-      
+
       toast({
         title: "Pagamento registrado",
         description: "Seu pagamento foi registrado e está aguardando aprovação",
       });
-      
-      // Reset form
+
       setReceiptUrl("");
-      
-      // Refresh payments list
+
       const updatedPayments = await getAllPayments();
       setPayments(updatedPayments);
-      
-      // Switch to overview tab
+
       setActiveTab("overview");
     } catch (error) {
       console.error("Error submitting payment:", error);
@@ -146,10 +141,10 @@ export default function FinancePage() {
       setIsSubmitting(false);
     }
   };
-  
+
   const handleCashWithdrawalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Erro",
@@ -158,7 +153,7 @@ export default function FinancePage() {
       });
       return;
     }
-    
+
     if (!user.isAdmin) {
       toast({
         title: "Erro",
@@ -167,7 +162,7 @@ export default function FinancePage() {
       });
       return;
     }
-    
+
     if (withdrawalAmount <= 0) {
       toast({
         title: "Erro",
@@ -176,7 +171,7 @@ export default function FinancePage() {
       });
       return;
     }
-    
+
     if (withdrawalAmount > currentBalance) {
       toast({
         title: "Erro",
@@ -185,7 +180,7 @@ export default function FinancePage() {
       });
       return;
     }
-    
+
     if (!withdrawalReason.trim()) {
       toast({
         title: "Erro",
@@ -194,34 +189,31 @@ export default function FinancePage() {
       });
       return;
     }
-    
+
     try {
       setIsWithdrawing(true);
-      
+
       await addCashWithdrawal({
         user_id: user.id,
         username: user.username,
         amount: withdrawalAmount,
         reason: withdrawalReason
       });
-      
+
       toast({
         title: "Resgate realizado",
         description: "O resgate foi registrado com sucesso",
       });
-      
-      // Reset form
+
       setWithdrawalAmount(0);
       setWithdrawalReason("");
-      
-      // Refresh data
+
       const newBalance = await getCurrentMonthBalance();
       setCurrentBalance(newBalance);
-      
+
       const withdrawals = await getCashWithdrawals();
       setCashWithdrawals(withdrawals);
-      
-      // Switch to overview tab
+
       setActiveTab("overview");
     } catch (error) {
       console.error("Error submitting withdrawal:", error);
@@ -255,12 +247,13 @@ export default function FinancePage() {
       .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
-  const calculateProgress = () => {
-    if (!settings) return 0;
+  // Função alterada para mostrar o percentual do dinheiro em caixa em relação ao total arrecadado
+  const calculateCashStatusPercent = () => {
     const total = calculateTotalCollected();
-    return Math.floor((total / settings.monthly_goal) * 100);
+    if (total === 0) return 0;
+    return Math.floor((currentBalance / total) * 100);
   };
-  
+
   const formatCurrency = (value: number) => {
     return `R$ ${value.toFixed(2)}`;
   };
@@ -272,7 +265,7 @@ export default function FinancePage() {
       description: "A chave Pix foi copiada para a área de transferência.",
     });
   };
-  
+
   const getCashBalanceColorClass = () => {
     if (currentBalance > 0) return "border-green-500 text-green-500";
     if (currentBalance < 0) return "border-red-500 text-red-500";
@@ -319,18 +312,17 @@ export default function FinancePage() {
               </p>
             </div>
 
+            {/* BOX ALTERADO */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-volleyball-purple">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Status do Mês</h3>
               <p className="text-3xl font-bold text-volleyball-purple">
-                {calculateProgress()}%
+                {calculateCashStatusPercent()}%
               </p>
-              {settings && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Faltam {formatCurrency(settings.monthly_goal - calculateTotalCollected())}
-                </p>
-              )}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">                
+                Faltam {formatCurrency(settings.monthly_goal - currentBalance)} para atingir a meta mensal
+              </p>
             </div>
-            
+
             <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 ${getCashBalanceColorClass()}`}>
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Dinheiro em Caixa</h3>
               <p className={`text-3xl font-bold ${currentBalance > 0 ? 'text-green-500' : currentBalance < 0 ? 'text-red-500' : 'text-gray-500'}`}>
@@ -351,12 +343,6 @@ export default function FinancePage() {
             {userPayments.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <p>Você ainda não realizou nenhum pagamento.</p>
-                {/* <Button 
-                  className="mt-4 volleyball-button-primary"
-                  onClick={() => setActiveTab("payment")}
-                >
-                  Realizar Pagamento
-                </Button> */}
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -493,7 +479,6 @@ export default function FinancePage() {
             <p className="text-gray-600 dark:text-gray-400 mb-4 flex items-center justify-center">
               Escaneie o QR Code para realizar o pagamento
             </p>
-
             <div className="flex justify-center mb-4">
               {settings?.pix_qrcode ? (
                 <img 
@@ -543,7 +528,7 @@ export default function FinancePage() {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Realize um resgate do saldo acumulado em caixa
             </p>
-            
+
             <div className="p-4 mb-4 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300">
               <p className="text-lg font-semibold">Saldo disponível: {formatCurrency(currentBalance)}</p>
             </div>
