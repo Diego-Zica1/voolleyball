@@ -35,6 +35,7 @@ export default function FinancePage() {
 
   const { user } = useAuth();
   const { toast } = useToast();
+  
 
   const tabs = [
     { id: "overview", label: "Finanças" },
@@ -247,11 +248,15 @@ export default function FinancePage() {
       .reduce((sum, payment) => sum + payment.amount, 0);
   };
 
-  // Função alterada para mostrar o percentual do dinheiro em caixa em relação ao total arrecadado
+  // Função alterada para mostrar o percentual do dinheiro em caixa em relação ao dinehiro em caixa
   const calculateCashStatusPercent = () => {
-    const total = calculateTotalCollected();
-    if (total === 0) return 0;
-    return Math.floor((currentBalance / total) * 100);
+    const goal = settings?.monthly_goal ?? 800; // Usa a meta definida ou 800 como padrão
+    if (goal === 0) return 0;
+    return Math.floor((currentBalance / goal) * 100);
+  };
+
+  const calculateTotalWithdrawals = () => {
+    return cashWithdrawals.reduce((sum, withdrawal) => sum + withdrawal.amount, 0);
   };
 
   const formatCurrency = (value: number) => {
@@ -290,18 +295,20 @@ export default function FinancePage() {
       {activeTab === "overview" ? (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Arrecadado</h3>
-              <p className="text-3xl font-bold text-green-500">
-                {formatCurrency(calculateTotalCollected())}
+          <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 ${getCashBalanceColorClass()}`}>
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Dinheiro em Caixa</h3>
+              <p className={`text-3xl font-bold ${currentBalance > 0 ? 'text-green-500' : currentBalance < 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                {formatCurrency(currentBalance)}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Saldo acumulado dos meses
               </p>
               {settings && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Meta mensal: {formatCurrency(settings.monthly_goal)}
-                </p>
-              )}
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Meta mensal: {formatCurrency(settings.monthly_goal)}
+              </p>
+            )}
             </div>
-
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-orange-500">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Pendente</h3>
               <p className="text-3xl font-bold text-orange-500">
@@ -321,17 +328,16 @@ export default function FinancePage() {
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">                
                 Faltam {formatCurrency(settings.monthly_goal - currentBalance)} para atingir a meta mensal
               </p>
-            </div>
-
-            <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 ${getCashBalanceColorClass()}`}>
-              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Dinheiro em Caixa</h3>
-              <p className={`text-3xl font-bold ${currentBalance > 0 ? 'text-green-500' : currentBalance < 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                {formatCurrency(currentBalance)}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Saldo acumulado dos meses
-              </p>
-            </div>
+            </div> 
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-green-500">
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Arrecadado</h3>
+            <p className="text-3xl font-bold text-green-500">
+              {formatCurrency(calculateTotalCollected())}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Total sacado: {formatCurrency(calculateTotalWithdrawals())}
+            </p>            
+          </div>           
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
