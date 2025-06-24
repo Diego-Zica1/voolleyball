@@ -90,9 +90,11 @@ export default function AdminPage() {
         setUsers(usersList);
         
         // Set default date to next Saturday
+        // Set default date to next Saturday (local time, not UTC)
         const nextSaturday = new Date();
         nextSaturday.setDate(nextSaturday.getDate() + (6 - nextSaturday.getDay() + 7) % 7);
-        const formattedDate = nextSaturday.toISOString().split('T')[0];
+        const pad = (n: number | string): string => n.toString().padStart(2, '0');
+        const formattedDate = `${nextSaturday.getFullYear()}-${pad(nextSaturday.getMonth() + 1)}-${pad(nextSaturday.getDate())}`;
         setGameDate(formattedDate);
         
         // Get latest game
