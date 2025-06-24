@@ -79,26 +79,26 @@ export type Database = {
         Row: {
           confirmed_at: string
           event_id: string
+          event_payed: boolean | null
           id: string
           user_id: string
           username: string
-          event_payed: boolean;
         }
         Insert: {
           confirmed_at?: string
           event_id: string
+          event_payed?: boolean | null
           id?: string
           user_id: string
           username: string
-          event_payed: boolean;
         }
         Update: {
           confirmed_at?: string
           event_id?: string
+          event_payed?: boolean | null
           id?: string
           user_id?: string
           username?: string
-          event_payed?: boolean;
         }
         Relationships: [
           {
@@ -116,39 +116,39 @@ export type Database = {
           created_by: string
           date: string
           description: string
+          event_description: string | null
           id: string
           is_active: boolean | null
           location: string
           map_location: string | null
           time: string
           value: number
-          event_description?: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
           date: string
           description: string
+          event_description?: string | null
           id?: string
           is_active?: boolean | null
           location: string
           map_location?: string | null
           time: string
           value: number
-          event_description?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
           date?: string
           description?: string
+          event_description?: string | null
           id?: string
           is_active?: boolean | null
           location?: string
           map_location?: string | null
           time?: string
           value?: number
-          event_description?: string | null
         }
         Relationships: []
       }

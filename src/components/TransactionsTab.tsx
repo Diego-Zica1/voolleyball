@@ -4,15 +4,19 @@ import { getTransactions, getAvailableMonths } from "@/lib/supabase";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { ListFilter } from "lucide-react";
 
 export function TransactionsTab() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
+  const [userFilter, setUserFilter] = useState<string>("");
+  const [descriptionFilter, setDescriptionFilter] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const itemsPerPage = 10;
+  const itemsPerPage = 30;
 
   useEffect(() => {
     const loadMonths = async () => {
@@ -30,12 +34,36 @@ export function TransactionsTab() {
     const loadTransactions = async () => {
       setIsLoading(true);
       const { data, count } = await getTransactions(currentPage, itemsPerPage, selectedMonth);
-      setTransactions(data);
+      
+      // Apply client-side filters
+      let filteredData = data;
+      
+      if (userFilter.trim()) {
+        filteredData = filteredData.filter(transaction => 
+          transaction.username.toLowerCase().includes(userFilter.toLowerCase())
+        );
+      }
+      
+      if (descriptionFilter.trim()) {
+        filteredData = filteredData.filter(transaction => {
+          const description = transaction.description?.includes("monthly")
+            ? "Mensalidade"
+            : transaction.description?.includes("weekly")
+            ? "Diária"
+            : transaction.description?.includes("custom")
+            ? "Esporádico"
+            : transaction.description || "";
+          
+          return description.toLowerCase().includes(descriptionFilter.toLowerCase());
+        });
+      }
+      
+      setTransactions(filteredData);
       setTotalPages(Math.ceil(count / itemsPerPage));
       setIsLoading(false);
     };
     loadTransactions();
-  }, [currentPage, selectedMonth]);
+  }, [currentPage, selectedMonth, userFilter, descriptionFilter]);
   
   const formatCurrency = (value: number) => {
     return `R$ ${Math.abs(value).toFixed(2)}`;
@@ -62,6 +90,13 @@ export function TransactionsTab() {
     if (currentPage < totalPages) {
       setCurrentPage(p => p + 1);
     }
+  };
+
+  const clearFilters = () => {
+    setUserFilter("");
+    setDescriptionFilter("");
+    setSelectedMonth(undefined);
+    setCurrentPage(1);
   };
 
   return (
@@ -96,6 +131,51 @@ export function TransactionsTab() {
               ))}
             </SelectContent>
           </Select>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <ListFilter className="w-4 h-4" />
+          <h3 className="text-lg font-medium">Filtros</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="userFilter" className="block text-sm font-medium mb-1">
+              Filtrar por Usuário
+            </label>
+            <Input
+              id="userFilter"
+              type="text"
+              placeholder="Nome do usuário..."
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="descriptionFilter" className="block text-sm font-medium mb-1">
+              Filtrar por Tipo de Pagamento
+            </label>
+            <Input
+              id="descriptionFilter"
+              type="text"
+              placeholder="Mensalidade, Diária, Esporádico..."
+              value={descriptionFilter}
+              onChange={(e) => setDescriptionFilter(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-sm bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Limpar Filtros
+            </button>
+          </div>
         </div>
       </div>
       
