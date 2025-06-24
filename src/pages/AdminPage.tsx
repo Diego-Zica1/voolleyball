@@ -24,6 +24,7 @@ import { Loader2, RefreshCw, User2 } from "lucide-react";
 import { deleteUser } from "@/lib/supabase";
 import { Trash2 } from "lucide-react";
 import { getActiveEvent, createEvent, finalizeEvent } from "@/lib/events";
+import { PollCreator } from "@/components/PollCreator";
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("controls");
@@ -248,29 +249,29 @@ export default function AdminPage() {
   };
 
   const toggleUserMonthlyPayer = async (userId: string, monthlyPayer: boolean) => {
-  try {
-    setIsTogglingMonthlyPayer(userId);
-    await updateUserMonthlyPayer(userId, monthlyPayer);
+    try {
+      setIsTogglingMonthlyPayer(userId);
+      await updateUserMonthlyPayer(userId, monthlyPayer);
 
-    setUsers(users.map(u =>
-      u.id === userId ? { ...u, monthly_payer: monthlyPayer } : u
-    ));
+      setUsers(users.map(u =>
+        u.id === userId ? { ...u, monthly_payer: monthlyPayer } : u
+      ));
 
-    toast({
-      title: "Mensalista atualizado",
-      description: `O usuário agora ${monthlyPayer ? 'é' : 'não é mais'} mensalista`,
-    });
-  } catch (error) {
-    console.error("Error updating user monthly payer status:", error);
-    toast({
-      title: "Erro ao atualizar mensalista",
-      description: "Não foi possível atualizar o status de mensalista",
-      variant: "destructive",
-    });
-  } finally {
-    setIsTogglingMonthlyPayer(null);
-  }
-};
+      toast({
+        title: "Mensalista atualizado",
+        description: `O usuário agora ${monthlyPayer ? 'é' : 'não é mais'} mensalista`,
+      });
+    } catch (error) {
+      console.error("Error updating user monthly payer status:", error);
+      toast({
+        title: "Erro ao atualizar mensalista",
+        description: "Não foi possível atualizar o status de mensalista",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingMonthlyPayer(null);
+    }
+  };
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
@@ -872,6 +873,8 @@ export default function AdminPage() {
               </form>
             )}
           </div>
+
+          <PollCreator />
         </div>
       )}
 
