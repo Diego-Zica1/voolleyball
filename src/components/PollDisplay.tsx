@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { getActivePolls, votePoll, closePoll, type PollWithOptions } from "@/lib/polls";
-import { Loader2, ChevronLeft, ChevronRight, Edit, Power } from "lucide-react";
+import { Loader2, Edit, Power } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -13,6 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PollEditor } from "./PollEditor";
+import { PollImageCarousel } from "./PollImageCarousel";
 
 export function PollDisplay() {
   const [polls, setPolls] = useState<PollWithOptions[]>([]);
@@ -20,7 +22,6 @@ export function PollDisplay() {
   const [votingPollId, setVotingPollId] = useState<string | null>(null);
   const [closingPollId, setClosingPollId] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<{ [pollId: string]: string[] }>({});
-  const [currentImageIndex, setCurrentImageIndex] = useState<{ [optionId: string]: number }>({});
   const [editingVote, setEditingVote] = useState<{ [pollId: string]: boolean }>({});
   const [editDialogOpen, setEditDialogOpen] = useState<{ [pollId: string]: boolean }>({});
   
@@ -133,25 +134,8 @@ export function PollDisplay() {
     return poll.votes.filter(vote => vote.option_id === optionId).map(vote => vote.username);
   };
 
-  const nextImage = (optionId: string, maxImages: number) => {
-    const currentIndex = currentImageIndex[optionId] || 0;
-    setCurrentImageIndex({
-      ...currentImageIndex,
-      [optionId]: (currentIndex + 1) % maxImages
-    });
-  };
-
-  const prevImage = (optionId: string, maxImages: number) => {
-    const currentIndex = currentImageIndex[optionId] || 0;
-    setCurrentImageIndex({
-      ...currentImageIndex,
-      [optionId]: currentIndex === 0 ? maxImages - 1 : currentIndex - 1
-    });
-  };
-
   const handleEditVote = (pollId: string) => {
     setEditingVote({ ...editingVote, [pollId]: true });
-    // Limpar seleções atuais para permitir nova votação
     setSelectedOptions({ ...selectedOptions, [pollId]: [] });
   };
 
@@ -193,6 +177,9 @@ export function PollDisplay() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">{poll.description}</p>
             )}
             
+            {/* Carrossel de imagens - apenas se houver imagens */}
+            <PollImageCarousel options={poll.options} />
+            
             <div className="space-y-3">
               {poll.options.map((option) => {
                 const percentage = getVotePercentage(poll, option.id);
@@ -218,38 +205,6 @@ export function PollDisplay() {
                               className="w-4 h-4"
                             />
                           )}
-                        </div>
-                      )}
-                      
-                      {option.image_url && (
-                        <div className="relative w-20 h-20 flex-shrink-0">
-                          <img
-                            src={option.image_url}
-                            alt={option.name}
-                            className="w-full h-full object-cover rounded"
-                          />
-                          <div className="absolute inset-y-0 left-0 flex items-center">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => prevImage(option.id, 1)}
-                              className="ml-1 opacity-70 hover:opacity-100"
-                            >
-                              <ChevronLeft className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="absolute inset-y-0 right-0 flex items-center">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => nextImage(option.id, 1)}
-                              className="mr-1 opacity-70 hover:opacity-100"
-                            >
-                              <ChevronRight className="h-3 w-3" />
-                            </Button>
-                          </div>
                         </div>
                       )}
                       
