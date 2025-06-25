@@ -29,6 +29,7 @@ import { Check, X, Trash } from "lucide-react";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MapPin, DollarSign, Beef, Volleyball, SquareCheckBig } from "lucide-react";
+import { PollDisplay } from "@/components/PollDisplay";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -579,7 +580,7 @@ export default function HomePage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-gray-500 hover:text-red-600 hover:bg-red-500/20 flex gap-2 dark:bg-gray-800 rounded-lg"
+                                    className="text-gray-500 hover:text-red-600 hover:bg-red-500/20 flex gap-2 bg-gray-800 text-white hover:bg-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-600 px-4 py-2"
                                     onClick={async () => {
                                       try {
                                         await removeEventConfirmation(activeEvent!.id, confirmation.user_id);
@@ -613,8 +614,8 @@ export default function HomePage() {
           )}
         </div>
 
-        <div>
-          <div id= "confirmed_players" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="space-y-6">
+          <div id="confirmed_players" className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">
               <SquareCheckBig className="inline-block mr-2" />
               Jogadores Confirmados ({confirmations.length})
@@ -676,6 +677,9 @@ export default function HomePage() {
               </ul>
             )}
           </div>
+
+          {/* Adicionar PollDisplay aqui */}
+          <PollDisplay />
         </div>
       </div>
     </PageContainer>
