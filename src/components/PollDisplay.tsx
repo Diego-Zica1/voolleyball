@@ -3,16 +3,25 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
-import { getActivePolls, votePoll, type PollWithOptions } from "@/lib/polls";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { getActivePolls, votePoll, closePoll, type PollWithOptions } from "@/lib/polls";
+import { Loader2, ChevronLeft, ChevronRight, Edit, Power } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 export function PollDisplay() {
   const [polls, setPolls] = useState<PollWithOptions[]>([]);
   const [loading, setLoading] = useState(true);
   const [votingPollId, setVotingPollId] = useState<string | null>(null);
+  const [closingPollId, setClosingPollId] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<{ [pollId: string]: string[] }>({});
   const [currentImageIndex, setCurrentImageIndex] = useState<{ [optionId: string]: number }>({});
+  const [editingVote, setEditingVote] = useState<{ [pollId: string]: boolean }>({});
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,7 +76,8 @@ export function PollDisplay() {
     try {
       setVotingPollId(poll.id);
       await votePoll(poll.id, selections, user.id, user.username);
-      await fetchPolls(); // Atualizar dados após votar
+      await fetchPolls();
+      setEditingVote({ ...editingVote, [poll.id]: false });
       
       toast({
         title: "Voto registrado",
@@ -82,6 +92,28 @@ export function PollDisplay() {
       });
     } finally {
       setVotingPollId(null);
+    }
+  };
+
+  const handleClosePoll = async (pollId: string) => {
+    try {
+      setClosingPollId(pollId);
+      await closePoll(pollId);
+      await fetchPolls();
+      
+      toast({
+        title: "Enquete desativada",
+        description: "A enquete foi desativada com sucesso",
+      });
+    } catch (error) {
+      console.error("Error closing poll:", error);
+      toast({
+        title: "Erro ao desativar",
+        description: "Não foi possível desativar a enquete",
+        variant: "destructive",
+      });
+    } finally {
+      setClosingPollId(null);
     }
   };
 
@@ -116,6 +148,12 @@ export function PollDisplay() {
     });
   };
 
+  const handleEditVote = (pollId: string) => {
+    setEditingVote({ ...editingVote, [pollId]: true });
+    // Limpar seleções atuais para permitir nova votação
+    setSelectedOptions({ ...selectedOptions, [pollId]: [] });
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -137,6 +175,7 @@ export function PollDisplay() {
     <div className="space-y-6">
       {polls.map((poll) => {
         const userVoted = hasUserVoted(poll);
+        const isEditingThisPoll = editingVote[poll.id];
         
         return (
           <div key={poll.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -154,7 +193,7 @@ export function PollDisplay() {
                 return (
                   <div key={option.id} className="border rounded-lg p-3">
                     <div className="flex items-center gap-3">
-                      {!userVoted && (
+                      {(!userVoted || isEditingThisPoll) && (
                         <div className="flex-shrink-0">
                           {poll.multiple_choice ? (
                             <Checkbox
@@ -207,7 +246,7 @@ export function PollDisplay() {
                       
                       <div className="flex-1">
                         <p className="font-medium">{option.name}</p>
-                        {userVoted && (
+                        {userVoted && !isEditingThisPoll && (
                           <div className="mt-1">
                             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                               <span>{percentage}%</span>
@@ -233,7 +272,7 @@ export function PollDisplay() {
               })}
             </div>
             
-            {!userVoted && (
+            {(!userVoted || isEditingThisPoll) && (
               <Button
                 onClick={() => handleVote(poll)}
                 disabled={votingPollId === poll.id}
@@ -245,9 +284,64 @@ export function PollDisplay() {
                     Votando...
                   </>
                 ) : (
-                  "Votar"
+                  isEditingThisPoll ? "Confirmar Novo Voto" : "Votar"
                 )}
               </Button>
+            )}
+
+            {userVoted && !isEditingThisPoll && (
+              <Button
+                onClick={() => handleEditVote(poll.id)}
+                variant="outline"
+                className="w-full mt-4"
+              >
+                Alterar Voto
+              </Button>
+            )}
+
+            {/* Botões de Admin */}
+            {user?.isAdmin && (
+              <div className="flex gap-2 mt-4 pt-4 border-t">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar Enquete</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Funcionalidade de edição será implementada em breve.
+                    </p>
+                  </DialogContent>
+                </Dialog>
+
+                <Button
+                  onClick={() => {
+                    if (window.confirm("Tem certeza que deseja desativar esta enquete?")) {
+                      handleClosePoll(poll.id);
+                    }
+                  }}
+                  disabled={closingPollId === poll.id}
+                  variant="destructive"
+                  size="sm"
+                >
+                  {closingPollId === poll.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Desativando...
+                    </>
+                  ) : (
+                    <>
+                      <Power className="h-4 w-4 mr-2" />
+                      Desativar
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         );
