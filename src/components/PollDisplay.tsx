@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { PollEditor } from "./PollEditor";
 
 export function PollDisplay() {
   const [polls, setPolls] = useState<PollWithOptions[]>([]);
@@ -22,6 +22,7 @@ export function PollDisplay() {
   const [selectedOptions, setSelectedOptions] = useState<{ [pollId: string]: string[] }>({});
   const [currentImageIndex, setCurrentImageIndex] = useState<{ [optionId: string]: number }>({});
   const [editingVote, setEditingVote] = useState<{ [pollId: string]: boolean }>({});
+  const [editDialogOpen, setEditDialogOpen] = useState<{ [pollId: string]: boolean }>({});
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -152,6 +153,14 @@ export function PollDisplay() {
     setEditingVote({ ...editingVote, [pollId]: true });
     // Limpar seleções atuais para permitir nova votação
     setSelectedOptions({ ...selectedOptions, [pollId]: [] });
+  };
+
+  const handleEditDialogClose = (pollId: string) => {
+    setEditDialogOpen({ ...editDialogOpen, [pollId]: false });
+  };
+
+  const handleEditSuccess = () => {
+    fetchPolls();
   };
 
   if (loading) {
@@ -302,20 +311,25 @@ export function PollDisplay() {
             {/* Botões de Admin */}
             {user?.isAdmin && (
               <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Dialog>
+                <Dialog 
+                  open={editDialogOpen[poll.id] || false} 
+                  onOpenChange={(open) => setEditDialogOpen({ ...editDialogOpen, [poll.id]: open })}
+                >
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm">
                       <Edit className="h-4 w-4 mr-2" />
                       Editar
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Editar Enquete</DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Funcionalidade de edição será implementada em breve.
-                    </p>
+                    <PollEditor 
+                      poll={poll} 
+                      onClose={() => handleEditDialogClose(poll.id)}
+                      onSuccess={handleEditSuccess}
+                    />
                   </DialogContent>
                 </Dialog>
 

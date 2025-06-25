@@ -110,12 +110,14 @@ export async function getActivePolls(): Promise<PollWithOptions[]> {
 }
 
 export async function votePoll(pollId: string, optionIds: string[], userId: string, username: string) {
-  // Primeiro, remover votos existentes do usuário nesta enquete
-  await supabase
+  // Primeiro, remover votos existentes do usuário nesta enquete (correção do bug)
+  const { error: deleteError } = await supabase
     .from('poll_votes')
     .delete()
     .eq('poll_id', pollId)
     .eq('user_id', userId);
+
+  if (deleteError) throw deleteError;
 
   // Inserir novos votos
   const votesToInsert = optionIds.map(optionId => ({
@@ -130,6 +132,77 @@ export async function votePoll(pollId: string, optionIds: string[], userId: stri
     .insert(votesToInsert);
 
   if (error) throw error;
+}
+
+export async function updatePoll(pollId: string, pollData: {
+  title: string;
+  description: string;
+  multiple_choice: boolean;
+  options: { id?: string; name: string; image_url?: string }[];
+}) {
+  // Atualizar a enquete
+  const { error: pollError } = await supabase
+    .from('polls')
+    .update({
+      title: pollData.title,
+      description: pollData.description,
+      multiple_choice: pollData.multiple_choice,
+    })
+    .eq('id', pollId);
+
+  if (pollError) throw pollError;
+
+  // Buscar opções existentes
+  const { data: existingOptions, error: fetchError } = await supabase
+    .from('poll_options')
+    .select('*')
+    .eq('poll_id', pollId);
+
+  if (fetchError) throw fetchError;
+
+  // Separar opções para atualizar, criar e deletar
+  const optionsToUpdate = pollData.options.filter(option => option.id);
+  const optionsToCreate = pollData.options.filter(option => !option.id);
+  const existingOptionIds = optionsToUpdate.map(opt => opt.id);
+  const optionsToDelete = existingOptions.filter(opt => !existingOptionIds.includes(opt.id));
+
+  // Deletar opções removidas
+  if (optionsToDelete.length > 0) {
+    const { error: deleteError } = await supabase
+      .from('poll_options')
+      .delete()
+      .in('id', optionsToDelete.map(opt => opt.id));
+
+    if (deleteError) throw deleteError;
+  }
+
+  // Atualizar opções existentes
+  for (const option of optionsToUpdate) {
+    const { error: updateError } = await supabase
+      .from('poll_options')
+      .update({
+        name: option.name,
+        image_url: option.image_url,
+      })
+      .eq('id', option.id);
+
+    if (updateError) throw updateError;
+  }
+
+  // Criar novas opções
+  if (optionsToCreate.length > 0) {
+    const optionsToInsert = optionsToCreate.map(option => ({
+      poll_id: pollId,
+      name: option.name,
+      image_url: option.image_url,
+    }));
+
+    const { error: createError } = await supabase
+      .from('poll_options')
+      .insert(optionsToInsert);
+
+    if (createError) throw createError;
+  }
 }
 
 export async function uploadPollImage(file: File): Promise<string> {
