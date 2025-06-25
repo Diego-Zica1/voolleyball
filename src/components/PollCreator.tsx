@@ -88,9 +88,15 @@ export function PollCreator() {
       const processedOptions = await Promise.all(
         validOptions.map(async (option) => {
           if (option.image) {
+            // Se tem um arquivo novo, faz upload e usa a URL pública
             const imageUrl = await uploadPollImage(option.image);
             return { name: option.name, image_url: imageUrl };
           }
+          // Se não tem arquivo novo, só use image_url se NÃO for blob:
+          if (option.image_url && !option.image_url.startsWith('blob:')) {
+            return { name: option.name, image_url: option.image_url };
+          }
+          // Caso contrário, envie sem image_url
           return { name: option.name };
         })
       );
@@ -218,7 +224,7 @@ export function PollCreator() {
                   <img
                     src={option.image_url}
                     alt={`Preview ${index + 1}`}
-                    className="w-full h-32 object-cover rounded"
+                    className="w-[131px] h-[131px] object-cover rounded"
                   />
                   <div className="absolute inset-y-0 left-0 flex items-center">
                     <Button

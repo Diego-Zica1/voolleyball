@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/AuthProvider";
 import { getActivePolls, votePoll, closePoll, type PollWithOptions } from "@/lib/polls";
-import { Loader2, Edit, Power } from "lucide-react";
+import { Loader2, Edit, Power, Vote } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -172,7 +172,10 @@ export function PollDisplay() {
         
         return (
           <div key={poll.id} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-xl font-semibold mb-2">{poll.title}</h3>
+            <div className="flex items-center justify-left mb-2">
+              <Vote className="h-8 w-8 mr-2" />
+              <h3 className="text-xl font-semibold">{poll.title}</h3>              
+            </div>
             {poll.description && (
               <p className="text-gray-600 dark:text-gray-400 mb-4">{poll.description}</p>
             )}
@@ -187,7 +190,7 @@ export function PollDisplay() {
                 const isSelected = selectedOptions[poll.id]?.includes(option.id);
                 
                 return (
-                  <div key={option.id} className="border rounded-lg p-3">
+                  <div key={option.id} className="border dark:border-gray-700 rounded-lg p-3">
                     <div className="flex items-center gap-3">
                       {(!userVoted || isEditingThisPoll) && (
                         <div className="flex-shrink-0">

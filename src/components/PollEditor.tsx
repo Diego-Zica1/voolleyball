@@ -232,7 +232,7 @@ export function PollEditor({ poll, onClose, onSuccess }: PollEditorProps) {
                   <img
                     src={option.image_url}
                     alt={`Preview ${index + 1}`}
-                    className="w-full h-32 object-cover rounded"
+                    className="w-[131px] h-[131px] object-cover rounded"
                   />
                   <div className="absolute inset-y-0 left-0 flex items-center">
                     <Button
