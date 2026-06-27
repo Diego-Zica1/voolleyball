@@ -27,6 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Trash } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { EditableAvatar } from "@/components/EditableAvatar";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MapPin, DollarSign, Beef, Volleyball, SquareCheckBig } from "lucide-react";
@@ -633,10 +634,14 @@ export default function HomePage() {
                     className="flex justify-between items-center py-2 border-b dark:border-[#020817] last:border-0"
                   >
                     <span className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={confirmation.profiles?.avatar_url || ""} alt={confirmation.username} />
-                        <AvatarFallback>{confirmation.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
+                      <EditableAvatar
+                        userId={confirmation.user_id}
+                        username={confirmation.username}
+                        avatarUrl={confirmation.profiles?.avatar_url}
+                        editable={confirmation.user_id === user.id}
+                        className="h-8 w-8"
+                      />
+
                       {confirmation.username}
                       {confirmation.profiles?.monthly_payer && (
                         <span className="ml-1 text-[#876ff3]">[M]</span>
