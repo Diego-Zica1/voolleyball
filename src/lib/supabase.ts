@@ -31,7 +31,7 @@ export const getConfirmations = async (gameId: string): Promise<Confirmation[]> 
     console.log("Fetching confirmations for game:", gameId);
     const { data, error } = await supabase
       .from('confirmations')
-      .select('*, profiles!inner(username, monthly_payer)')
+      .select('*, profiles!inner(username, monthly_payer, avatar_url)')
       .eq('game_id', gameId);
 
     if (error) {
@@ -554,6 +554,7 @@ export const updateScoreboardSettings = async (settings: Partial<ScoreboardSetti
       .select('id')
       .limit(1);
 
+    const { team_a_font_color, team_b_font_color, ...dbSettings } = settings as any;
     let error;
 
     if (existingSettings && existingSettings.length > 0) {
@@ -561,7 +562,7 @@ export const updateScoreboardSettings = async (settings: Partial<ScoreboardSetti
       const { error: updateError } = await supabase
         .from('scoreboard_settings')
         .update({
-          ...settings,
+          ...dbSettings,
           updated_at: new Date().toISOString()
         })
         .eq('id', existingSettings[0].id);
@@ -572,9 +573,9 @@ export const updateScoreboardSettings = async (settings: Partial<ScoreboardSetti
       const { error: insertError } = await supabase
         .from('scoreboard_settings')
         .insert({
-          ...settings,
-          team_a_color: settings.team_a_color || '#000000',
-          team_b_color: settings.team_b_color || '#42bd00'
+          ...dbSettings,
+          team_a_color: dbSettings.team_a_color || '#000000',
+          team_b_color: dbSettings.team_b_color || '#42bd00'
         });
       
       error = insertError;
