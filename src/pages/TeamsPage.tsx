@@ -287,32 +287,34 @@ export default function TeamsPage() {
 
             <div className="space-y-4">
               {/* Grid para inputs lado a lado */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
-                    Times
-                  </label>
-                  <Input
-                    id="numberOfTeams"
-                    type="number"
-                    min="1"
-                    value={numberOfTeams}
-                    onChange={handleNumberOfTeamsChange}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="maxPlayersPerTeam" className="block text-sm font-medium mb-1">
-                    Jogadores por Time
-                  </label>
-                  <Input
-                    id="maxPlayersPerTeam"
-                    type="number"
-                    min="1"
-                    value={maxPlayersPerTeam}
-                    onChange={handleMaxPlayersPerTeamChange}
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="numberOfTeams" className="block text-sm font-medium mb-1">
+                  Times
+                </label>
+                <Input
+                  id="numberOfTeams"
+                  type="number"
+                  min="1"
+                  value={numberOfTeams === 0 ? "" : numberOfTeams}
+                  onChange={handleNumberOfTeamsChange}
+                  onFocus={(e) => e.target.select()} // Seleciona todo o texto ao clicar, facilitando a digitação direta
+                />
               </div>
+              <div>
+                <label htmlFor="maxPlayersPerTeam" className="block text-sm font-medium mb-1">
+                  Jogadores por Time
+                </label>
+                <Input
+                  id="maxPlayersPerTeam"
+                  type="number"
+                  min="1"
+                  value={maxPlayersPerTeam === 0 ? "" : maxPlayersPerTeam}
+                  onChange={handleMaxPlayersPerTeamChange}
+                  onFocus={(e) => e.target.select()} // Seleciona todo o texto ao clicar, facilitando a digitação direta
+                />
+              </div>
+            </div>
 
               {/* Adicionar jogador não confirmado */}
               <div className="mt-2">
