@@ -27,6 +27,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Trash } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { EditableAvatar } from "@/components/EditableAvatar";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MapPin, DollarSign, Beef, Volleyball, SquareCheckBig } from "lucide-react";
