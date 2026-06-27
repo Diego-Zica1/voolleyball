@@ -14,7 +14,7 @@ interface EditableAvatarProps {
   onUpdated?: (newUrl: string) => void;
 }
 
-const MAX_SIZE = 200 * 1024; // 200KB
+const MAX_SIZE = 300 * 1024; // 300KB
 
 export function EditableAvatar({
   userId,
@@ -38,7 +38,7 @@ export function EditableAvatar({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    e.target.value = "";
+    e.target.value = ""; // Reseta o input para permitir enviar a mesma imagem se necessário
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -48,7 +48,7 @@ export function EditableAvatar({
     if (file.size > MAX_SIZE) {
       toast({
         title: "Imagem muito grande",
-        description: "O tamanho máximo é 200KB.",
+        description: "O tamanho máximo é 300KB.",
         variant: "destructive",
       });
       return;
@@ -56,22 +56,36 @@ export function EditableAvatar({
 
     setUploading(true);
     try {
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
+      // 1. Define a extensão e o caminho único do arquivo no Storage do Supabase
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/${Math.random()}.${fileExt}`;
 
-      const { error } = await supabase
+      // 2. Faz o upload do arquivo binário diretamente para o bucket 'avatars'
+      // Nota: Certifique-se de que o bucket 'avatars' existe e é público no Supabase Console
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, {
+          upsert: true, // Substitui se o arquivo já existir
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 3. Busca a URL pública do arquivo recém-criado no servidor
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      // 4. Salva APENAS a URL de referência no banco de dados (profiles)
+      const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: dataUrl })
+        .update({ avatar_url: publicUrl })
         .eq("id", userId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      setLocalUrl(dataUrl);
-      onUpdated?.(dataUrl);
+      // 5. Atualiza os estados locais com a URL do servidor
+      setLocalUrl(publicUrl);
+      onUpdated?.(publicUrl);
       toast({ title: "Foto atualizada!" });
     } catch (err: any) {
       toast({
